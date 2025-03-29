@@ -15,7 +15,7 @@ typedef struct {
 } playerSHMStruct;
 
 typedef struct {
-  unsigned short tableLength; // Ancho del tablero
+  unsigned short tableWidth; // Ancho del tablero
   unsigned short tableHeight; // Alto del tablero
   unsigned int playerQty; // Cantidad de jugadores
   playerSHMStruct playerList[9]; // Lista de jugadores

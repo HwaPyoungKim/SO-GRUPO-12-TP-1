@@ -4,7 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include "shareMemory.h"
+#include "sharedMemory.h"
 #include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -14,6 +14,8 @@
 #define DEFAULT_WIDTH 10
 #define DEFAULT_DELAY 200
 #define DEFAULT_TIMEOUT 10
+#define ERROR_VALUE -1
+#define SHARED_BETWEEN_PROCESSES 1
 
 #define MAX_PLAYERS 9
 
@@ -31,31 +33,30 @@ typedef struct {
 
 //Funcion para crear 2 memorias compartidas “/game_state” y “/game_sync”
 
-void * createPlayerSHM(char * name, size_t size){
-  int fd;
-  fd = shm_open(name, O_RDWR | O_CREAT, 0666); // mode solo para crearla
-  if(fd == -1){
-    perror("shm_open");
-    exit(EXIT_FAILURE);
-  }
+// void * createPlayerSHM(char * name, size_t size){
+//   int fd;
+//   fd = shm_open(name, O_RDWR | O_CREAT, 0666); // mode solo para crearla
+//   if(fd == -1){
+//     perror("shm_open");
+//     exit(EXIT_FAILURE);
+//   }
 
-  //solo para crearla
-  if(-1 == ftruncate(fd,size)){
-    perror("ftruncate");
-    exit(EXIT_FAILURE);
-  }
+//   //solo para crearla
+//   if(-1 == ftruncate(fd,size)){
+//     perror("ftruncate");
+//     exit(EXIT_FAILURE);
+//   }
 
-  void *p = mmap(NULL, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
-  if(p == MAP_FAILED){
-    perror("mmap");
-    exit(EXIT_FAILURE);
-  }
-  return p;
-}
+//   void *p = mmap(NULL, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+//   if(p == MAP_FAILED){
+//     perror("mmap");
+//     exit(EXIT_FAILURE);
+//   }
+//   return p;
+// }
 
 int
-main(int argc, char *argv[])
-{
+main(int argc, char *argv[]) {
         //validacion de parametros que se le pasa al master
 //      ● [-w width]: Ancho del tablero. Default y mínimo: 10
 //      ● [-h height]: Alto del tablero. Default y mínimo: 10
@@ -119,41 +120,165 @@ main(int argc, char *argv[])
         }
   }
 
-  // int    pipefd[2];
-  // char   buf;
-  // pid_t  cpid;
+      if (config.player_count == 0) {
+        fprintf(stderr, "Debe especificar al menos un jugador con -p\n");
+        return -1;
+    }
 
-  // if (argc != 2) {
-  //   fprintf(stderr, "Usage: %s <string>\n", argv[0]);
-  //   exit(EXIT_FAILURE);
-  // }
+  
 
-  // if (pipe(pipefd) == -1) {
-  //   perror("pipe");
-  //   exit(EXIT_FAILURE);
-  // }
+////////////////////////////////////////////////////////////////////////
+}
 
-  // cpid = fork();
-  // if (cpid == -1) {
-  //   perror("fork");
-  //   exit(EXIT_FAILURE);
-  // }
+//Shared Memory of gameState
 
-  // if (cpid == 0) {    /* Child reads from pipe */
-  //   close(pipefd[1]);          /* Close unused write end */
+void * createGameStateSHM(char * name, config_t * config) {
+    shm_unlink(name);
+       
+    int fd;
+    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0666);
+    
+    if(fd == ERROR_VALUE) {
+        perror("Fallo al crear la memoria compartida del game state\n");
+        return NULL;
+    }
 
-  //   while (read(pipefd[0], &buf, 1) > 0)
-  //     write(STDOUT_FILENO, &buf, 1);
+    size_t totalSize = sizeof(gameStateSHMStruct) + sizeof(int) * config->width * config->height;
+    
+    if(ftruncate(fd, sizeof(totalSize)) == ERROR_VALUE) {
+        perror("No hay espacio para la memoria compartida del game state\n");
+        return NULL;
+    }
 
-  //   write(STDOUT_FILENO, "\n", 1);
-  //   close(pipefd[0]);
-  //   _exit(EXIT_SUCCESS);
+    gameStateSHMStruct * gameState = (gameStateSHMStruct *) mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
-  // } else {            /* Parent writes argv[1] to pipe */
-  //   close(pipefd[0]);          /* Close unused read end */
-  //   write(pipefd[1], argv[1], strlen(argv[1]));
-  //   close(pipefd[1]);          /* Reader will see EOF */
-  //   wait(NULL);                /* Wait for child */
-  //   exit(EXIT_SUCCESS);
-  // }
+    if(gameState == MAP_FAILED) {
+        perror("Fallo mapear la memoria compartida del game state\n");
+        return NULL;
+    }
+
+    if(close(fd) == ERROR_VALUE) {
+      perror("Fallo cerrar la memoria compartida del game state\n");
+      return NULL;
+    }
+
+    gameState->tableWidth = config->width;
+    gameState->tableHeight = config->height;
+    gameState->playerQty = config->player_count;
+    gameState->gameState = false;
+
+    return gameState;
+}
+
+int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState) {
+
+    if(munmap(gameState, sizeof(gameStateSHMStruct)) == ERROR_VALUE) {
+      perror("Fallo desmapear la memoria compartida del game state\n");
+      return ERROR_VALUE;
+    }
+
+    if(shm_unlink(name) == ERROR_VALUE){
+      perror("Fallo deslinkear la memoria compartida del game state\n");
+      return ERROR_VALUE;
+    }
+    return 0;
+}
+
+//Shared Memory of gameSync
+
+gameSyncSHMStruct * createGameSyncSHM(char * name, int total_files) {
+    shm_unlink(name);
+       
+    int fd;
+    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0666);
+    
+    if(fd == ERROR_VALUE) {
+        perror("Fallo al crear la memoria compartida del game sync\n");
+        return NULL;
+    }
+    
+    if(ftruncate(fd, sizeof(gameSyncSHMStruct)) == ERROR_VALUE) {
+        perror("No hay espacio para la memoria compartida del game Sync\n");
+        return NULL;
+    }
+
+    gameSyncSHMStruct * gameSync = mmap(NULL, sizeof(gameSyncSHMStruct), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    if(gameSync == MAP_FAILED) {
+        perror("Fallo mapear la memoria compartida del game sync\n");
+        return NULL;
+    }
+
+    if(sem_init(&(gameSync->A), MAP_SHARED, 0) == ERROR_VALUE) {
+        perror("Fallo crear el semaforo A\n");
+        return NULL;
+    }
+
+    if(sem_init(&(gameSync->B), MAP_SHARED, 0) == ERROR_VALUE) {
+      perror("Fallo crear el semaforo B\n");
+      return NULL;
+    }
+
+    if(sem_init(&(gameSync->C), MAP_SHARED, 0) == ERROR_VALUE) {
+      perror("Fallo crear el semaforo C\n");
+      return NULL;
+    }
+
+    if(sem_init(&(gameSync->D), MAP_SHARED, 0) == ERROR_VALUE) {
+      perror("Fallo crear el semaforo D\n");
+      return NULL;
+    }
+
+    if(sem_init(&(gameSync->E), MAP_SHARED, 0) == ERROR_VALUE) {
+      perror("Fallo crear el semaforo E\n");
+      return NULL;  
+    }
+
+    if(close(fd) == ERROR_VALUE) {
+        perror("Fallo cerrar la memoria compartida del game sync\n");
+        return NULL;
+    }
+
+    //guardar las cosas
+
+    return gameSync;
+}
+
+int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
+
+    if(sem_destroy(&(gameSync->A)) == ERROR_VALUE) {
+      perror("Fallo cerrar el semaforo A");
+      return ERROR_VALUE;
+    }
+
+    if(sem_destroy(&(gameSync->B)) == ERROR_VALUE) {
+      perror("Fallo cerrar el semaforo B");
+      return ERROR_VALUE;
+    }
+
+    if(sem_destroy(&(gameSync->C)) == ERROR_VALUE) {
+      perror("Fallo cerrar el semaforo C");
+      return ERROR_VALUE;
+    }
+
+    if(sem_destroy(&(gameSync->D)) == ERROR_VALUE) {
+      perror("Fallo cerrar el semaforo D");
+      return ERROR_VALUE;
+    }
+
+    if(sem_destroy(&(gameSync->E)) == ERROR_VALUE) {
+      perror("Fallo cerrar el semaforo E");
+      return ERROR_VALUE;
+    }
+
+    if(munmap(gameSync, sizeof(gameSyncSHMStruct)) == ERROR_VALUE) {
+        perror("Fallo desmapear la memoria compartida del game sync\n");
+        return ERROR_VALUE;
+    }
+
+    if(shm_unlink(name) == ERROR_VALUE){
+        perror("Fallo deslinkear la memoria compartida del game sync");
+        return ERROR_VALUE;
+    }
+    return 0;
 }
