@@ -119,11 +119,6 @@ main(int argc, char *argv[])
         }
   }
 
-  if (config.player_count == 0) {
-        fprintf(stderr, "Debe especificar al menos un jugador con -p\n");
-        exit(EXIT_FAILURE);
-  }
-
   // int    pipefd[2];
   // char   buf;
   // pid_t  cpid;

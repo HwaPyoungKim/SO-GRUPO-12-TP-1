@@ -23,6 +23,10 @@ typedef struct {
   int tableStartPointer[]; // Puntero al comienzo del tablero. fila-0, fila-1, ..., fila-n-1
 } gameStateSHMStruct;
 
+
+///////////////////////////////////
+
+
 typedef struct {
   sem_t A; // Se usa para indicarle a la vista que hay cambios por imprimir
   sem_t B; // Se usa para indicarle al master que la vista terminó de imprimir
