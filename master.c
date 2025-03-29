@@ -3,14 +3,35 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include "shareMemory.h"
+#include <stdint.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 //Funcion para crear 2 memorias compartidas “/game_state” y “/game_sync”
 
-// void * createPlayerSHM(char * name, size_t size){
-//   int fd;
-//   fd = shm_
-// }
+void * createPlayerSHM(char * name, size_t size){
+  int fd;
+  fd = shm_open(name, O_RDWR | O_CREAT, 0666); // mode solo para crearla
+  if(fd == -1){
+    perror("shm_open");
+    exit(EXIT_FAILURE);
+  }
+
+  //solo para crearla
+  if(-1 == ftruncate(fd,size)){
+    perror("ftruncate");
+    exit(EXIT_FAILURE);
+  }
+
+  void *p = mmap(NULL, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+  if(p == MAP_FAILED){
+    perror("mmap");
+    exit(EXIT_FAILURE);
+  }
+  return p;
+}
 
 int
 main(int argc, char *argv[])
