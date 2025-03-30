@@ -15,9 +15,12 @@
 #define DEFAULT_DELAY 200
 #define DEFAULT_TIMEOUT 10
 #define ERROR_VALUE -1
-#define SHARED_BETWEEN_PROCESSES 1
+#define GAME_STATE_SHM_NAME "/game_state"
 
 #define MAX_PLAYERS 9
+
+#define WRITE 0
+#define READ 1
 
 typedef struct {
     int width;
@@ -26,34 +29,12 @@ typedef struct {
     int timeout;
     int seed;
     char* view_path; // puede ser NULL
-    char* player_paths[MAX_PLAYERS];
-    int player_count;
+    char* playerPaths[MAX_PLAYERS];
+    int playerCount;
 } config_t;
 
-
-//Funcion para crear 2 memorias compartidas “/game_state” y “/game_sync”
-
-// void * createPlayerSHM(char * name, size_t size){
-//   int fd;
-//   fd = shm_open(name, O_RDWR | O_CREAT, 0666); // mode solo para crearla
-//   if(fd == -1){
-//     perror("shm_open");
-//     exit(EXIT_FAILURE);
-//   }
-
-//   //solo para crearla
-//   if(-1 == ftruncate(fd,size)){
-//     perror("ftruncate");
-//     exit(EXIT_FAILURE);
-//   }
-
-//   void *p = mmap(NULL, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
-//   if(p == MAP_FAILED){
-//     perror("mmap");
-//     exit(EXIT_FAILURE);
-//   }
-//   return p;
-// }
+void * createGameStateSHM(char * name, config_t * config);
+int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState);
 
 int
 main(int argc, char *argv[]) {
@@ -75,7 +56,7 @@ main(int argc, char *argv[]) {
   config.timeout = DEFAULT_TIMEOUT;
   config.seed = time(NULL);
   config.view_path = NULL;
-  config.player_count = 0;
+  config.playerCount = 0;
 
   int opt;
 
@@ -103,31 +84,92 @@ main(int argc, char *argv[]) {
                 break;
             case 'p':
                 // Los jugadores vienen después de -p
-                config.player_paths[0] = strdup(optarg);
-                config.player_count = 1;
+                config.playerPaths[0] = strdup(optarg);
+                config.playerCount = 1;
                 for (int i = optind; i < argc ; i++) {
-                  if(config.player_count >= MAX_PLAYERS){
+                  if(config.playerCount >= MAX_PLAYERS){
                     fprintf(stderr, "Como mucho debe especificar 9 jugadores usando -p\n");
                     exit(EXIT_FAILURE);
                   }
-                    config.player_paths[config.player_count++] = strdup(argv[i]);
+                    config.playerPaths[config.playerCount++] = strdup(argv[i]);
                     optind++;
                 }
-                return 0; // ya no hay más argumentos relevantes
+                break;
             default:
                 fprintf(stderr, "Uso: %s [-w width] [-h height] [-d delay] [-t timeout] [-s seed] [-v view] -p player1 player2 ...\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
   }
 
-      if (config.player_count == 0) {
-        fprintf(stderr, "Debe especificar al menos un jugador con -p\n");
-        return -1;
+  if (config.playerCount == 0) {
+       fprintf(stderr, "Debe especificar al menos un jugador con -p\n");
+       return -1;
+  }
+
+  //Crear las memorias compartidas
+  gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct * ) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
+
+  int pipePlayerToMaster[config.playerCount][2];
+  int pipeMasterToPlayer[config.playerCount][2];
+  pid_t playerPids[config.playerCount];
+
+  for (int i = 0; i < config.playerCount; i++) {
+
+    //Creamos pipes de player a master
+    if (pipe(pipePlayerToMaster[i]) == ERROR_VALUE) {
+      perror("Error in pipe player to master");
+      exit(EXIT_FAILURE);
     }
 
-  
+    //Creamos pipes de master a player
+    if (pipe(pipeMasterToPlayer[i]) == ERROR_VALUE) {
+      perror("Error in pipe master to player");
+      exit(EXIT_FAILURE);
+    }
 
-////////////////////////////////////////////////////////////////////////
+    //Creamos procesos hijos
+    pid_t pid = fork();
+    if (pid == ERROR_VALUE) {
+      perror("fork");
+      exit(EXIT_FAILURE);
+    }
+    
+    if(pid == 0){
+      close(pipePlayerToMaster[i][0]); // Cierra lectura
+      dup2(pipePlayerToMaster[i][1], STDOUT_FILENO); // Redirige stdout al pipe
+      // Armo argumentos
+      char width_str[10], height_str[10];
+      snprintf(width_str, sizeof(width_str), "%d", config.width);
+      snprintf(height_str, sizeof(height_str), "%d", config.height);
+
+      char *argumentos[] = { config.playerPaths[i], width_str, height_str, NULL };
+
+      execve(config.playerPaths[i], argumentos, NULL);
+
+      // Solo si execve falla:
+      perror("Execve falló");
+      exit(EXIT_FAILURE);
+    } else {
+
+    }
+
+
+  }
+
+
+
+  //Borrar las memorias compartidas
+  if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
+    exit(EXIT_FAILURE);
+  }
+  //Limpio los pipes
+
+  //Esperamos a los hijos para terminar
+  for (int i = 0; i < config.playerCount; i++) {
+    int status;
+    waitpid(playerPids[i], &status, 0);
+  }
+
 }
 
 //Shared Memory of gameState
@@ -136,7 +178,7 @@ void * createGameStateSHM(char * name, config_t * config) {
     shm_unlink(name);
        
     int fd;
-    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0666);
+    fd = shm_open(name, O_CREAT | O_RDWR, 0666);
     
     if(fd == ERROR_VALUE) {
         perror("Fallo al crear la memoria compartida del game state\n");
@@ -145,7 +187,7 @@ void * createGameStateSHM(char * name, config_t * config) {
 
     size_t totalSize = sizeof(gameStateSHMStruct) + sizeof(int) * config->width * config->height;
     
-    if(ftruncate(fd, sizeof(totalSize)) == ERROR_VALUE) {
+    if(ftruncate(fd, totalSize) == ERROR_VALUE) {
         perror("No hay espacio para la memoria compartida del game state\n");
         return NULL;
     }
@@ -164,7 +206,7 @@ void * createGameStateSHM(char * name, config_t * config) {
 
     gameState->tableWidth = config->width;
     gameState->tableHeight = config->height;
-    gameState->playerQty = config->player_count;
+    gameState->playerQty = config->playerCount;
     gameState->gameState = false;
 
     return gameState;
@@ -186,11 +228,11 @@ int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState) {
 
 //Shared Memory of gameSync
 
-gameSyncSHMStruct * createGameSyncSHM(char * name, int total_files) {
+gameSyncSHMStruct * createGameSyncSHM(char * name) {
     shm_unlink(name);
        
     int fd;
-    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0666);
+    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0644);
     
     if(fd == ERROR_VALUE) {
         perror("Fallo al crear la memoria compartida del game sync\n");
@@ -282,3 +324,20 @@ int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
     }
     return 0;
 }
+
+int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerToMaster)[2]){
+  for (int i = 0; i < playerCount; i++){
+    //Limpio primer pipe de master a player
+    if(close(pipeMasterToPlayer[i][WRITE]) == ERROR_VALUE){
+      perror("Fallo limpiar el pipe de master a player");
+      return(ERROR_VALUE);
+    }
+    //Limpio segundo pipe de player a master
+      if(close(pipePlayerToMaster[i][READ]) == ERROR_VALUE){
+      perror("Fallo limpiar el pipe de player a master");
+      return(ERROR_VALUE);
+    }
+  }
+  return 0;
+}
+
