@@ -35,6 +35,7 @@ typedef struct {
 
 void * createGameStateSHM(char * name, config_t * config);
 int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState);
+int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerToMaster)[2]);
 
 int
 main(int argc, char *argv[]) {
@@ -109,11 +110,33 @@ main(int argc, char *argv[]) {
   //Crear las memorias compartidas
   gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct * ) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
 
+  //Asigno la informacion a la memoria compartida
+  gameStateSHM->gameState = false;
+  gameStateSHM->playerQty = config.playerCount;
+  gameStateSHM->tableWidth = config.width;
+  gameStateSHM->tableHeight = config.height;
+
   int pipePlayerToMaster[config.playerCount][2];
   int pipeMasterToPlayer[config.playerCount][2];
   pid_t playerPids[config.playerCount];
 
+  for (int i = 0; i < config.playerCount; i++){
+    printf(config.playerPaths[i]);
+  }
+  
+
   for (int i = 0; i < config.playerCount; i++) {
+
+    playerSHMStruct * player = &gameStateSHM->playerList[i];
+    strncpy(player->playerName, config.playerPaths[i], sizeof(player->playerName) - 1);
+    player->playerName[sizeof(player->playerName) - 1] = '\0';
+
+    player->score = 0;
+    player->invalidMoveQty = 0;
+    player->validMoveQty = 0;
+    //player->tableX = ;
+    //player->tableY = ;
+    player->isBlocked = false;
 
     //Creamos pipes de player a master
     if (pipe(pipePlayerToMaster[i]) == ERROR_VALUE) {
@@ -135,8 +158,8 @@ main(int argc, char *argv[]) {
     }
     
     if(pid == 0){
-      close(pipePlayerToMaster[i][0]); // Cierra lectura
-      dup2(pipePlayerToMaster[i][1], STDOUT_FILENO); // Redirige stdout al pipe
+      close(pipeMasterToPlayer[i][0]); // Cierra lectura
+      dup2(pipeMasterToPlayer[i][1], STDOUT_FILENO); // Redirige stdout al pipe
       // Armo argumentos
       char width_str[10], height_str[10];
       snprintf(width_str, sizeof(width_str), "%d", config.width);
@@ -147,13 +170,9 @@ main(int argc, char *argv[]) {
       execve(config.playerPaths[i], argumentos, NULL);
 
       // Solo si execve falla:
-      perror("Execve falló");
+      perror("execve");
       exit(EXIT_FAILURE);
-    } else {
-
     }
-
-
   }
 
 
@@ -163,13 +182,14 @@ main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
   //Limpio los pipes
-
+  if(clearPipes(config.playerCount, pipePlayerToMaster, pipeMasterToPlayer) == ERROR_VALUE){
+    exit(EXIT_FAILURE);
+  }
   //Esperamos a los hijos para terminar
   for (int i = 0; i < config.playerCount; i++) {
     int status;
     waitpid(playerPids[i], &status, 0);
   }
-
 }
 
 //Shared Memory of gameState
@@ -330,14 +350,13 @@ int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerTo
     //Limpio primer pipe de master a player
     if(close(pipeMasterToPlayer[i][WRITE]) == ERROR_VALUE){
       perror("Fallo limpiar el pipe de master a player");
-      return(ERROR_VALUE);
+      return ERROR_VALUE;
     }
     //Limpio segundo pipe de player a master
       if(close(pipePlayerToMaster[i][READ]) == ERROR_VALUE){
       perror("Fallo limpiar el pipe de player a master");
-      return(ERROR_VALUE);
+      return ERROR_VALUE;
     }
   }
   return 0;
 }
-
