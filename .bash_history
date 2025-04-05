@@ -184,3 +184,50 @@ gcc -Wall -Werror master.c && ./a.out
 gcc -Wall -Werror master.c && ./a.out
 ./a.out -p player1 player2 player3
 exit
+cd
+ls
+gcc -Wall -Werror master.c && ./a.out
+gcc -Wall -Werror master.c && ./a.out
+gcc -Wall -Werror master.c && ./a.out -lm
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+strace ./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+clear
+clear
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+exit

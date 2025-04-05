@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#include <math.h>
 
 #define DEFAULT_HEIGHT 10
 #define DEFAULT_WIDTH 10
@@ -116,6 +117,12 @@ main(int argc, char *argv[]) {
   gameStateSHM->tableWidth = config.width;
   gameStateSHM->tableHeight = config.height;
 
+  //Crear los valores del tablero:
+  int *tablero = gameStateSHM->tableStartPointer;
+    for (int i = 0; i < config.width * config.height; i++) {
+      tablero[i] = (rand() % 9) + 1; // recompensa entre 1 y 9
+  }
+
   int pipePlayerToMaster[config.playerCount][2];
   int pipeMasterToPlayer[config.playerCount][2];
   pid_t playerPids[config.playerCount];
@@ -123,19 +130,41 @@ main(int argc, char *argv[]) {
   for (int i = 0; i < config.playerCount; i++){
     printf(config.playerPaths[i]);
   }
-  
 
+  //Crear separacion de jugadores
+  int width = gameStateSHM->tableWidth;
+  int height = gameStateSHM->tableHeight;
+  int playerQty = gameStateSHM->playerQty;
+
+  int rows = (int) sqrt(playerQty);
+  int columns = (playerQty + rows - 1) / rows;
+
+  int cellWidth = width / columns;
+  int cellHeight = height / rows;
+  
   for (int i = 0; i < config.playerCount; i++) {
 
     playerSHMStruct * player = &gameStateSHM->playerList[i];
     strncpy(player->playerName, config.playerPaths[i], sizeof(player->playerName) - 1);
     player->playerName[sizeof(player->playerName) - 1] = '\0';
 
+    int row = i / columns;
+    int col = i % columns;
+
+    int x_ini = col * cellWidth;
+    int y_ini = row * cellHeight;
+
+    int x = x_ini + cellWidth / 2;
+    int y = y_ini + cellHeight / 2;
+
+    if (x >= width) x = width - 1;
+    if (y >= height) y = height - 1;
+
     player->score = 0;
     player->invalidMoveQty = 0;
     player->validMoveQty = 0;
-    //player->tableX = ;
-    //player->tableY = ;
+    player->tableX = x;
+    player->tableY = y; 
     player->isBlocked = false;
 
     //Creamos pipes de player a master
@@ -158,8 +187,8 @@ main(int argc, char *argv[]) {
     }
     
     if(pid == 0){
-      close(pipeMasterToPlayer[i][0]); // Cierra lectura
-      dup2(pipeMasterToPlayer[i][1], STDOUT_FILENO); // Redirige stdout al pipe
+      close(pipePlayerToMaster[i][0]); // Cierra lectura
+      dup2(pipePlayerToMaster[i][1], STDOUT_FILENO); // Redirige stdout al pipe
       // Armo argumentos
       char width_str[10], height_str[10];
       snprintf(width_str, sizeof(width_str), "%d", config.width);
@@ -190,6 +219,25 @@ main(int argc, char *argv[]) {
     int status;
     waitpid(playerPids[i], &status, 0);
   }
+
+  // for (int y = 0; y < height; y++) {
+  //   for (int x = 0; x < width; x++) {
+  //       int index = y * width + x;
+  //       int cell = gameStateSHM->tableStartPointer[index-1];
+
+  //       // Print cell with formatting
+  //       if (cell == 0) {
+  //           printf(" . ");      // Empty cell
+  //       } else if (cell > 0) {
+  //           printf(" %d ", cell); // Reward
+  //       } else {
+  //           printf("P%d ", -cell); // Player (negative values)
+  //       }
+  //   }
+  //   printf("\n");
+  // }
+
+
 }
 
 //Shared Memory of gameState
@@ -360,3 +408,6 @@ int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerTo
   }
   return 0;
 }
+
+
+
