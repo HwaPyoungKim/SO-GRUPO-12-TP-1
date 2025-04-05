@@ -231,3 +231,13 @@ gcc -Wall -Werror master.c -o master -lm
 gcc -Wall -Werror master.c -o master -lm
 ./master -p player1 player2 player3
 exit
+cd
+ls
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+./master -p player1 player2 player3
+./master -p player1 player2 player3
+./master -p player1 player2 player3
+./master -p player1 player2 player3
+./master -p player1 player2 player3
+exit

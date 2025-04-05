@@ -124,12 +124,11 @@ main(int argc, char *argv[]) {
   }
 
   int pipePlayerToMaster[config.playerCount][2];
-  int pipeMasterToPlayer[config.playerCount][2];
   pid_t playerPids[config.playerCount];
 
-  for (int i = 0; i < config.playerCount; i++){
-    printf(config.playerPaths[i]);
-  }
+  // for (int i = 0; i < config.playerCount; i++){
+  //   printf(config.playerPaths[i]);
+  // }
 
   //Crear separacion de jugadores
   int width = gameStateSHM->tableWidth;
@@ -141,7 +140,7 @@ main(int argc, char *argv[]) {
 
   int cellWidth = width / columns;
   int cellHeight = height / rows;
-  
+
   for (int i = 0; i < config.playerCount; i++) {
 
     playerSHMStruct * player = &gameStateSHM->playerList[i];
@@ -167,15 +166,12 @@ main(int argc, char *argv[]) {
     player->tableY = y; 
     player->isBlocked = false;
 
+    // asignamos la posicion inicial de cada jugador segun los calculos de la funcion
+    gameStateSHM->tableStartPointer[y * width + x] = i * (-1); 
+
     //Creamos pipes de player a master
     if (pipe(pipePlayerToMaster[i]) == ERROR_VALUE) {
       perror("Error in pipe player to master");
-      exit(EXIT_FAILURE);
-    }
-
-    //Creamos pipes de master a player
-    if (pipe(pipeMasterToPlayer[i]) == ERROR_VALUE) {
-      perror("Error in pipe master to player");
       exit(EXIT_FAILURE);
     }
 
@@ -204,7 +200,9 @@ main(int argc, char *argv[]) {
     }
   }
 
+  //Hacer select, escuchar mediante el pipe
 
+  
 
   //Borrar las memorias compartidas
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
@@ -220,23 +218,7 @@ main(int argc, char *argv[]) {
     waitpid(playerPids[i], &status, 0);
   }
 
-  // for (int y = 0; y < height; y++) {
-  //   for (int x = 0; x < width; x++) {
-  //       int index = y * width + x;
-  //       int cell = gameStateSHM->tableStartPointer[index-1];
-
-  //       // Print cell with formatting
-  //       if (cell == 0) {
-  //           printf(" . ");      // Empty cell
-  //       } else if (cell > 0) {
-  //           printf(" %d ", cell); // Reward
-  //       } else {
-  //           printf("P%d ", -cell); // Player (negative values)
-  //       }
-  //   }
-  //   printf("\n");
-  // }
-
+  
 
 }
 
@@ -406,6 +388,32 @@ int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerTo
       return ERROR_VALUE;
     }
   }
+  return 0;
+}
+
+int validMove(unsigned char mov, int * table[], int tableSize,  playerSHMStruct * player, gameStateSHMStruct * gameStateSHM) {
+  //Si es borde, retornar -1 (se quiere mover para afuera)
+  if(isBorder(player, gameStateSHM)){
+    
+  }
+  //Si no esta entre el 1 al 9 (casillero), retornar -1
+  
+  //Si el movimiento es valido retornar 0
+  // return movePlayer(...)
+  return 0;
+}
+
+boolean isBorder(playerSHMStruct * player, gameStateSHMStruct * gState){
+  return (player->tableX == 0 || player->tableX == (gState->tableWidth - 1) || 
+          player->tableY == 0 || player->tableY == gState->tableHeight - 1)
+}
+
+int movePlayer(unsigned char mov, int * table[], int tableSize, unsigned short playerX, unsigned short playerY) {
+  //Agregarle puntos al jugador
+
+  //Mover al jugador hacia la posicion
+
+  //retorar 0
   return 0;
 }
 
