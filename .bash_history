@@ -241,3 +241,41 @@ gcc -Wall -Werror master.c -o master -lm
 ./master -p player1 player2 player3
 ./master -p player1 player2 player3
 exit
+cd
+ls
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror vista.c -o view -lm
+gcc -Wall -Werror vista.c -o view -lm
+clear
+clear
+gcc -Wall -Werror vista.c -o view -lm
+gcc -Wall -Werror vista.c -o view -lm
+./master -p player1 player2 player3 -v view
+./master -p player1 player2 player3
+strace ./master -p player1 player2 player3 -v view
+strace ./master -p player1 player2 player3 -v view
+./master -p player1 player2 player3 -v view
+./master -v view -p player1 player2 player3 
+./master -p player1 player2 player3 -v view
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3 -v view
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3 -v view
+gcc -Wall -Werror vista.c -o view -lm
+./master -p player1 player2 player3 -v view
+gcc -Wall -Werror vista.c -o view -lm
+./master -p player1 player2 player3 -v view
+gcc -Wall -Werror vista.c -o view -lm
+gcc -Wall -Werror master.c -o master -lm
+./master -p player1 player2 player3 -v view
+./master -p player1 player2 player3 -v view
+exit

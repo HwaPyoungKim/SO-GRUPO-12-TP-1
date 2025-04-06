@@ -42,6 +42,7 @@ void * createGameStateSHM(char * name, config_t * config);
 int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState);
 int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]);
 bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned char mov);
+void printTablero(int *table, int width, int height);
 
 int
 main(int argc, char *argv[]) {
@@ -94,6 +95,9 @@ main(int argc, char *argv[]) {
                 config.playerPaths[0] = strdup(optarg);
                 config.playerCount = 1;
                 for (int i = optind; i < argc ; i++) {
+                  if (argv[i][0] == '-') {
+                    break;
+                  }
                   if(config.playerCount >= MAX_PLAYERS){
                     fprintf(stderr, "Como mucho debe especificar 9 jugadores usando -p\n");
                     exit(EXIT_FAILURE);
@@ -116,16 +120,36 @@ main(int argc, char *argv[]) {
   //Crear las memorias compartidas
   gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct * ) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
 
-  //Asigno la informacion a la memoria compartida
-  gameStateSHM->gameState = false;
-  gameStateSHM->playerQty = config.playerCount;
-  gameStateSHM->tableWidth = config.width;
-  gameStateSHM->tableHeight = config.height;
-
   //Crear los valores del tablero:
   int *tablero = gameStateSHM->tableStartPointer;
     for (int i = 0; i < config.width * config.height; i++) {
       tablero[i] = (rand() % 9) + 1; // recompensa entre 1 y 9
+  }
+
+  //Creo el fork a la vista
+  if(config.view_path != NULL){
+    pid_t pid = fork();
+    if (pid == ERROR_VALUE) {
+      perror("fork");
+      exit(EXIT_FAILURE);
+    }
+
+    if(pid == 0){
+      //Pipes para vista
+
+      // Armo argumentos
+      char width_str[10], height_str[10];
+      snprintf(width_str, sizeof(width_str), "%d", config.width);
+      snprintf(height_str, sizeof(height_str), "%d", config.height);
+
+      char *arguments[] = { config.view_path, width_str, height_str, NULL };
+
+      execve(config.view_path, arguments, NULL);
+
+      // Solo si execve falla:
+      perror("execve");
+      exit(EXIT_FAILURE);
+    }
   }
 
   int pipePlayerToMaster[config.playerCount][2];
@@ -195,9 +219,9 @@ main(int argc, char *argv[]) {
       snprintf(width_str, sizeof(width_str), "%d", config.width);
       snprintf(height_str, sizeof(height_str), "%d", config.height);
 
-      char *argumentos[] = { config.playerPaths[i], width_str, height_str, NULL };
+      char *arguments[] = { config.playerPaths[i], width_str, height_str, NULL };
 
-      execve(config.playerPaths[i], argumentos, NULL);
+      execve(config.playerPaths[i], arguments, NULL);
 
       // Solo si execve falla:
       perror("execve");
@@ -207,7 +231,10 @@ main(int argc, char *argv[]) {
 
   //Hacer select, escuchar mediante el pipe
 
-  
+
+  //Sleep agregado ya que la SHM se borra antes de que vista.c
+  //pueda accederla
+  sleep(3);
 
   //Borrar las memorias compartidas
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
@@ -509,62 +536,61 @@ bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned 
                     return false; // Invalid movement
             }
         }
+      }
+    }
+
+  int posY = gameStateSHM->playerList[indexPlayer].tableY;
+  int posX = gameStateSHM->playerList[indexPlayer].tableX;
+
+  switch(mov) {
+    case 0: {
+      posY--;
+      break;
+    }
+    case 1: {
+      posX++;
+      posY--;
+      break;
+    }
+    case 2: {
+      posX++;
+      break;
+    }
+    case 3: {
+      posX++;
+      posY++;
+      break;
+    }
+    case 4: {
+      posY++;
+      break;
+    }
+    case 5: {
+      posX--;
+      posY++;
+      break;
+    }
+    case 6: {
+      posX--;
+      break;
+    }
+    case 7: {
+      posX--;
+      posY--;
+      break;
     }
   }
 
-int posY = gameStateSHM->playerList[indexPlayer].tableY;
-int posX = gameStateSHM->playerList[indexPlayer].tableX;
-
-switch(mov) {
-  case 0: {
-    posY--;
-    break;
+  int playerPosInTable = (posY * gameStateSHM->tableWidth) + posX; 
+  if(gameStateSHM->tableStartPointer[playerPosInTable] > 0){
+    int reward = gameStateSHM->tableStartPointer[playerPosInTable];
+    gameStateSHM->playerList[indexPlayer].score += reward;
+    gameStateSHM->tableStartPointer[playerPosInTable] = indexPlayer * (-1);
+    gameStateSHM->playerList[indexPlayer].tableX = posX;
+    gameStateSHM->playerList[indexPlayer].tableY = posY;
+    return true;
   }
-  case 1: {
-    posX++;
-    posY--;
-    break;
-  }
-  case 2: {
-    posX++;
-    break;
-  }
-  case 3: {
-    posX++;
-    posY++;
-    break;
-  }
-  case 4: {
-    posY++;
-    break;
-  }
-  case 5: {
-    posX--;
-    posY++;
-    break;
-  }
-  case 6: {
-    posX--;
-    break;
-  }
-  case 7: {
-    posX--;
-    posY--;
-    break;
-  }
-}
-
-int playerPosInTable = (posY * gameStateSHM->tableWidth) + posX; 
-if(gameStateSHM->tableStartPointer[playerPosInTable] > 0){
-  int reward = gameStateSHM->tableStartPointer[playerPosInTable];
-  gameStateSHM->playerList[indexPlayer].score += reward;
-  gameStateSHM->tableStartPointer[playerPosInTable] = indexPlayer * (-1);
-  gameStateSHM->playerList[indexPlayer].tableX = posX;
-  gameStateSHM->playerList[indexPlayer].tableY = posY;
-  return true;
-}
-return false;
-
+  return false;
 }
 
 

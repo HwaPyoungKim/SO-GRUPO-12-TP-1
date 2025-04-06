@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <time.h>
 
+#define GAME_STATE_SHM_NAME "/game_state"
+
 int main(int argc, char *argv[]){
   //recibe como parametro el ancho y alto del tablero
 
