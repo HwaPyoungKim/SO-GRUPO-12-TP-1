@@ -279,3 +279,7 @@ gcc -Wall -Werror master.c -o master -lm
 ./master -p player1 player2 player3 -v view
 ./master -p player1 player2 player3 -v view
 exit
+cd
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+exit

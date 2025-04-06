@@ -230,7 +230,71 @@ main(int argc, char *argv[]) {
   }
 
   //Hacer select, escuchar mediante el pipe
+  int activePlayers = gameStateSHM->playerQty;
+  int selectedPlayer = 0;
+  
+  while(activePlayers > 0){
+    fd_set pipeSet;
+    FD_ZERO(&pipeSet);
+    int maxFD = -1;
 
+    for(int i = 0; i < config.playerCount; i++){
+      int pipeFD = pipePlayerToMaster[i][0];
+      if(pipeFD != -1){
+        FD_SET(pipeFD, &pipeSet);
+        if (pipeFD > maxFD){
+          maxFD = pipeFD;
+        }
+      }
+    }
+
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 1000;
+
+    int ready = select(maxFD + 1, &pipeSet, NULL, NULL, &timeout);
+
+    if(ready < 0){
+      perror("select");
+      break;
+    }
+
+    if(ready == 0){
+      //Terminar si no responde por tantos segundos
+
+      //sino continuar
+      continue;
+    }
+
+    //Reiniciar contador de tiempo
+
+    for(int i = 0; i < gameStateSHM->playerQty; i++){
+      int index = (selectedPlayer + i) % gameStateSHM->playerQty;
+      int pipeFD = pipePlayerToMaster[index][0];
+
+      if(pipeFD == -1){
+        continue;
+      }
+
+      if(FD_ISSET(pipeFD,&pipeSet)){
+        unsigned char mov;
+        int n = read(pipeFD, &mov, 1);
+        if(n < 0){
+          perror("read");
+          pipePlayerToMaster[index][0] = -1;
+          activePlayers--;
+        } else if(n == 0){
+          pipePlayerToMaster[index][0] = -1;
+          activePlayers--;
+        } else {
+          //Leyo el movimiento
+          //Aplicar logica de juego
+        }
+        selectedPlayer = (index + 1) % config.playerCount;
+        break;
+      }
+    }
+  }
 
   //Sleep agregado ya que la SHM se borra antes de que vista.c
   //pueda accederla
