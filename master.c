@@ -23,6 +23,10 @@
 #define WRITE 0
 #define READ 1
 
+// typedef enum {
+//   NORTH, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST
+// } Direction;
+
 typedef struct {
     int width;
     int height;
@@ -36,7 +40,8 @@ typedef struct {
 
 void * createGameStateSHM(char * name, config_t * config);
 int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState);
-int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerToMaster)[2]);
+int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]);
+bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned char mov);
 
 int
 main(int argc, char *argv[]) {
@@ -209,7 +214,7 @@ main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
   //Limpio los pipes
-  if(clearPipes(config.playerCount, pipePlayerToMaster, pipeMasterToPlayer) == ERROR_VALUE){
+  if(clearPipes(config.playerCount, pipePlayerToMaster) == ERROR_VALUE){
     exit(EXIT_FAILURE);
   }
   //Esperamos a los hijos para terminar
@@ -375,13 +380,8 @@ int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
     return 0;
 }
 
-int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerToMaster)[2]){
+int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]){
   for (int i = 0; i < playerCount; i++){
-    //Limpio primer pipe de master a player
-    if(close(pipeMasterToPlayer[i][WRITE]) == ERROR_VALUE){
-      perror("Fallo limpiar el pipe de master a player");
-      return ERROR_VALUE;
-    }
     //Limpio segundo pipe de player a master
       if(close(pipePlayerToMaster[i][READ]) == ERROR_VALUE){
       perror("Fallo limpiar el pipe de player a master");
@@ -391,30 +391,180 @@ int clearPipes(int playerCount, int (*pipeMasterToPlayer)[2], int (*pipePlayerTo
   return 0;
 }
 
-int validMove(unsigned char mov, int * table[], int tableSize,  playerSHMStruct * player, gameStateSHMStruct * gameStateSHM) {
+int validMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * gameStateSHM) {
   //Si es borde, retornar -1 (se quiere mover para afuera)
-  if(isBorder(player, gameStateSHM)){
-    
+  if(indexPlayer < 0 || indexPlayer >= 9){
+    perror("Indice invalido para acceder a jugador");
+    return ERROR_VALUE;
   }
-  //Si no esta entre el 1 al 9 (casillero), retornar -1
+
+  if(!checkMovement(indexPlayer, gameStateSHM, mov)){
+    gameStateSHM->playerList[indexPlayer].invalidMoveQty++;
+    return -1;
+  }
+
+  gameStateSHM->playerList[indexPlayer].validMoveQty++;
   
-  //Si el movimiento es valido retornar 0
-  // return movePlayer(...)
   return 0;
 }
 
-boolean isBorder(playerSHMStruct * player, gameStateSHMStruct * gState){
-  return (player->tableX == 0 || player->tableX == (gState->tableWidth - 1) || 
-          player->tableY == 0 || player->tableY == gState->tableHeight - 1)
+bool isBorder(int indexPlayer, gameStateSHMStruct * gameStateSHM){
+  return (gameStateSHM->playerList[indexPlayer].tableX == 0 || gameStateSHM->playerList[indexPlayer].tableX == (gameStateSHM->tableWidth - 1) || 
+  gameStateSHM->playerList[indexPlayer].tableY == 0 || gameStateSHM->playerList[indexPlayer].tableY == (gameStateSHM->tableHeight - 1));
 }
 
-int movePlayer(unsigned char mov, int * table[], int tableSize, unsigned short playerX, unsigned short playerY) {
-  //Agregarle puntos al jugador
 
-  //Mover al jugador hacia la posicion
+bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned char mov){
+  // Check if the player is on the border
+  if (isBorder(indexPlayer, gameStateSHM)) {
+        
+    // Player is in the upper-left corner
+    if (gameStateSHM->playerList[indexPlayer].tableX == 0 && gameStateSHM->playerList[indexPlayer].tableY == 0) {
+        switch (mov) {
+            case 0:
+            case 1:
+            case 5:
+            case 6:
+            case 7:
+                return false;
+        }
+    }
+    
+    // Player is in the upper-right corner
+    else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1 && gameStateSHM->playerList[indexPlayer].tableY == 0) {
+        switch (mov) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 7:
+                return false;
+        }
+    }
+    
+    // Player is in the lower-left corner
+    else if (gameStateSHM->playerList[indexPlayer].tableX == 0 && gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
+        // Valid movements: 4 (down), 5 (down-left), 6 (left)
+        switch (mov) {
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+                return false;
+        }
+    }
+    
+    // Player is in the lower-right corner
+    else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1 && gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
+        // Valid movements: 4 (down), 3 (down-right), 2 (right)
+        switch (mov) {
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                return false;
+        }
+    }
+    
+    // Player is on the border but not in any corner (left column, right column, top row, bottom row)
+    else {
+        // For example, if the player is on the left column (excluding corners)
+        if (gameStateSHM->playerList[indexPlayer].tableX == 0) {
+            switch (mov) {
+                case 6:
+                case 5:
+                case 7:
+                    return false; // Invalid movement
+            }
+        }
 
-  //retorar 0
-  return 0;
+        // If the player is on the right column (excluding corners)
+        else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1) {
+            switch (mov) {
+                case 2: 
+                case 1:
+                case 3:
+                    return false; // Invalid movement
+            }
+        }
+
+        // If the player is in the first row (excluding corners)
+        else if (gameStateSHM->playerList[indexPlayer].tableY == 0) {
+            switch (mov) {
+                case 7:
+                case 0:
+                case 1:
+                    return false; // Invalid movement
+            }
+        }
+
+        // If the player is in the last row (excluding corners)
+        else if (gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
+            switch (mov) {
+                case 3:
+                case 4: 
+                case 5:
+                    return false; // Invalid movement
+            }
+        }
+    }
+  }
+
+int posY = gameStateSHM->playerList[indexPlayer].tableY;
+int posX = gameStateSHM->playerList[indexPlayer].tableX;
+
+switch(mov) {
+  case 0: {
+    posY--;
+    break;
+  }
+  case 1: {
+    posX++;
+    posY--;
+    break;
+  }
+  case 2: {
+    posX++;
+    break;
+  }
+  case 3: {
+    posX++;
+    posY++;
+    break;
+  }
+  case 4: {
+    posY++;
+    break;
+  }
+  case 5: {
+    posX--;
+    posY++;
+    break;
+  }
+  case 6: {
+    posX--;
+    break;
+  }
+  case 7: {
+    posX--;
+    posY--;
+    break;
+  }
+}
+
+int playerPosInTable = (posY * gameStateSHM->tableWidth) + posX; 
+if(gameStateSHM->tableStartPointer[playerPosInTable] > 0){
+  int reward = gameStateSHM->tableStartPointer[playerPosInTable];
+  gameStateSHM->playerList[indexPlayer].score += reward;
+  gameStateSHM->tableStartPointer[playerPosInTable] = indexPlayer * (-1);
+  gameStateSHM->playerList[indexPlayer].tableX = posX;
+  gameStateSHM->playerList[indexPlayer].tableY = posY;
+  return true;
+}
+return false;
+
 }
 
 
