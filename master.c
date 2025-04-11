@@ -212,7 +212,7 @@ main(int argc, char *argv[]) {
     player->isBlocked = false;
 
     // asignamos la posicion inicial de cada jugador segun los calculos de la funcion
-    gameStateSHM->tableStartPointer[y * width + x] = i * (-1); 
+    gameStateSHM->tableStartPointer[y * width + x] = (i + 1) * (-1); 
 
     //Creamos pipes de player a master
     if (pipe(pipePlayerToMaster[i]) == ERROR_VALUE) {
@@ -310,22 +310,24 @@ main(int argc, char *argv[]) {
         } else {
           //Leyo el movimiento
           beginWrite(gameSyncSHM);
-          printf("player %d current pos: X:%d Y:%d\n\n", index, gameStateSHM->playerList[index].tableX, gameStateSHM->playerList[index].tableY);
-          printf("Jugador %d intento mover: %d\n", index, mov);
+          printf("player %d current pos: X:%d Y:%d\n\n", index+1, gameStateSHM->playerList[index].tableX, gameStateSHM->playerList[index].tableY);
+          printf("Jugador %d intento mover: %d\n", index+1, mov);
            bool stateMove = validMove(mov, index, gameStateSHM);
-           printf("Resultado de validMove para jugador %d: %d\n", index, stateMove);
+           printf("Resultado de validMove para jugador %d: %d\n", index+1, stateMove);
            if(!stateMove){
-             printf("Jugador %d hizo un movimiento inválido: %d\n", index, mov);
-             printf("Verificando si jugador %d está bloqueado: %d\n", index, gameStateSHM->playerList[index].isBlocked);
+             printf("Jugador %d hizo un movimiento inválido: %d\n", index+1, mov);
+            
+             if (gameStateSHM->playerList[index].isBlocked && pipePlayerToMaster[index][0] != -1) {
+              printf("Jugador %d está bloqueado. Cerrando su pipe y disminuyendo jugadores activos.\n", index+1);
+              close(pipePlayerToMaster[index][0]);
+              pipePlayerToMaster[index][0] = -1;
+              activePlayers--;
+            }
+          
            }
-
-           if(gameStateSHM->playerList[index].isBlocked){
-            printf("estoy dentro del else if del isBlocked\n");
-            activePlayers--;
-           }
-           else{
-            printf("Jugador %d no está bloqueado\n", index);
-           }
+          
+          printf("Verificando si jugador %d está bloqueado: %d\n", index, gameStateSHM->playerList[index].isBlocked);
+           
            
 
            endWrite(gameSyncSHM);
@@ -543,15 +545,33 @@ bool validMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * gameStat
     return ERROR_VALUE;
   }
 
-  if(!checkMovement(indexPlayer, gameStateSHM, mov)){
-    if(!checkMoveAvailability(indexPlayer, gameStateSHM)){
-      //player no tiene mas movimientos posibles
-      gameStateSHM->playerList[indexPlayer].isBlocked = true;
-      printf("Jugador %d marcado como bloqueado\n", indexPlayer);
+  bool moveOk = checkMovement(indexPlayer, gameStateSHM, mov);
+  printf("checkMovement → %d\n", moveOk);
+
+  if (!moveOk) {
+    bool hasMoves = checkMoveAvailability(indexPlayer, gameStateSHM);
+    printf("checkMoveAvailability → %d\n", hasMoves);
+
+    if (!hasMoves) {
+        gameStateSHM->playerList[indexPlayer].isBlocked = true;
+        printf("Jugador %d marcado como bloqueado\n", indexPlayer);
     }
+
     gameStateSHM->playerList[indexPlayer].invalidMoveQty++;
     return false;
+
   }
+
+
+  // if(!checkMovement(indexPlayer, gameStateSHM, mov)){
+  //   if(!checkMoveAvailability(indexPlayer, gameStateSHM)){
+  //     //player no tiene mas movimientos posibles
+  //     gameStateSHM->playerList[indexPlayer].isBlocked = true;
+  //     printf("Jugador %d marcado como bloqueado\n", indexPlayer);
+  //   }
+  //   gameStateSHM->playerList[indexPlayer].invalidMoveQty++;
+  //   return false;
+  // }
 
   gameStateSHM->playerList[indexPlayer].validMoveQty++;
   
@@ -674,7 +694,7 @@ bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned 
   if(!checkIfOccupied(playerPosInTable, gameStateSHM)){
     int reward = gameStateSHM->tableStartPointer[playerPosInTable];
     gameStateSHM->playerList[indexPlayer].score += reward;
-    gameStateSHM->tableStartPointer[playerPosInTable] = indexPlayer * (-1);
+    gameStateSHM->tableStartPointer[playerPosInTable] = (indexPlayer + 1) * (-1);
     gameStateSHM->playerList[indexPlayer].tableX = posX;
     gameStateSHM->playerList[indexPlayer].tableY = posY;
     return true;
@@ -684,7 +704,7 @@ bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned 
 }
 
 bool checkIfOccupied(int posTable, gameStateSHMStruct * gameStateSHM){
-  return !(gameStateSHM->tableStartPointer[posTable] > 0);  
+  return gameStateSHM->tableStartPointer[posTable] < 1;  
 }
 
 
@@ -700,16 +720,27 @@ bool checkPosAvailability(int iniMov, int limit, gameStateSHMStruct * gameStateS
     posX = gameStateSHM->playerList[indexPlayer].tableX;
 
     movCases((movIniValid++) % 8, &posX, &posY);
-        
-    playerPosInTable = (posY * gameStateSHM->tableWidth) + posX;
+
+    if (posX >= 0 && posX < gameStateSHM->tableWidth && posY >= 0 && posY < gameStateSHM->tableHeight){
+      playerPosInTable = (posY * gameStateSHM->tableWidth) + posX;
      if(!checkIfOccupied(playerPosInTable, gameStateSHM)){
        return true;
      }
     cantInvalid++;
+    }       
+    
   }
 
   return false;  
 }
+
+// if(posX >= 0 && posX < gameStateSHM->tableWidth && posY >= 0 && posY < gameStateSHM->tableHeight){
+//   playerPosInTable = (posY * gameStateSHM->tableWidth) + posX;
+//   if(!checkIfOccupied(playerPosInTable, gameStateSHM)){
+//    return true;
+//  }
+// cantInvalid++;
+// }
 
 void movCases(int mov, int *posX, int *posY) {
   switch (mov) {
