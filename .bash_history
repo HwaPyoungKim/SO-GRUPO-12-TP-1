@@ -283,3 +283,180 @@ cd
 gcc -Wall -Werror master.c -o master -lm
 gcc -Wall -Werror master.c -o master -lm
 exit
+cd root
+gcc -Wall -Werror master.c -o master -lm
+./master.c
+./master
+./master -p dd
+./master -p sdsd -v
+./master -p sdsd -v view
+ls
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall -Werror master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+./master -p sdsd -v view
+ls
+gcc -Wall  player.c -o player1 -lm
+./master -p player1 -v view
+rm player1
+ls
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v view
+mmap man
+man mmap
+gcc -Wall  player.c -o player1 -lm
+gcc -Wall  player.c -o player1 -lm
+gcc -Wall  player.c -o player1 -lm
+gcc -Wall  player.c -o player1 -lm
+gcc -Wall  player.c -o player1 -lm
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+gcc -Wall  player.c -o player1 -lm
+./master -p player1 -v view
+gcc -Wall  player.c -o player2 -lm
+gcc -Wall  player.c -o player3 -lm
+./master -p player1 player2 player3 -v view
+./master -p player1 player2 player3 -v view
+./master -p player1 player2 player3 -v view
+./master -p player1 player2 -v view
+./master -p player1 -v view
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v view
+gcc -Wall  vista.c -o vista -lm
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 -v vista
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v vista
+./master -p player1 -v view
+./master -p player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 -v vista
+gcc -Wall  player.c -o player1 -lm
+./master -p player1 -v vista
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v vista
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 -v vista
+./master -p player1 -v view
+./master -p player1 player1 -v view
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+./master -p player1 player1 -v vista
+./master -p player1 -v vista
+./master -p player1 player1 player1-v vista
+./master -p player1 player1 player1 -v vista
+./master -p player1 player1 player1 player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 player1 player1 player1 -v vista
+./master -p player1 player1 player1 player1 player1 -v vista
+clear
+./master -p player1 player1 player1 player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 player1 player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 player1 player1 player1 -v vista
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  vista.c -o vista -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+clear
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall  master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall player.c -o player1 -lm
+./master -p player1 player1 -v vista
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall master.c -o master -lm
+./master -p player1 player1 -v vista
+./master -p player1 player1 -v vista
+gcc -Wall master.c -o master -lm
+./master -p player1 player1 -v vista
+gcc -Wall vista.c -o vista -lm
+gcc -Wall vista.c -o vista -lm
+./master -p player1 player1 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 player1 -v vista
+./master -p player1 -v vista
+gcc -Wall master.c -o master -lm
+./master -p player1 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 -v vista
+./master -p player1 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 -v vista

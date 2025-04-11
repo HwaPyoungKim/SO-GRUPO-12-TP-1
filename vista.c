@@ -12,6 +12,10 @@
 #include <math.h>
 
 #define GAME_STATE_SHM_NAME "/game_state"
+#define GAME_SYNC_SHM_NAME "/game_sync"
+
+void endRead(gameSyncSHMStruct *sync);
+void beginRead(gameSyncSHMStruct *sync);
 
 void printTablero(int *table, int width, int height);
 
@@ -28,21 +32,46 @@ int main(int argc, char *argv[]){
 
   size_t totalSize = sizeof(gameStateSHMStruct) + sizeof(int) * width * height;
 
-  int fd = shm_open(GAME_STATE_SHM_NAME, O_RDWR, 0666);
-  if (fd == -1) {
+  int gameStateFD = shm_open(GAME_STATE_SHM_NAME, O_RDWR, 0666);
+  if (gameStateFD == -1) {
     perror("shm_open xd");
     exit(EXIT_FAILURE);
   }
 
-  gameStateSHMStruct *gameStateSHM = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  int gameSyncFD = shm_open(GAME_SYNC_SHM_NAME, O_RDWR, 0666);
+  if (gameSyncFD == -1) {
+    perror("shm_open GAME_SYNC");
+    exit(EXIT_FAILURE);
+  }
+
+  gameStateSHMStruct *gameStateSHM = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, gameStateFD, 0);
   if (gameStateSHM == MAP_FAILED) {
     perror("mmap");
     exit(EXIT_FAILURE);
   }
 
-  printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
+  gameSyncSHMStruct *gameSyncSHM = mmap(NULL, sizeof(gameSyncSHMStruct), PROT_READ | PROT_WRITE, MAP_SHARED, gameSyncFD, 0);
+  if (gameSyncSHM == MAP_FAILED) {
+    perror("mmap GAME_SYNC");
+    exit(EXIT_FAILURE);
+  }
 
-  close(fd);
+  while (1) {
+    printf("[view] waiting on A...\n");
+    sem_wait(&gameSyncSHM->A); // wait for master to signal
+    printf("[view] passed A\n");
+    
+    beginRead(gameSyncSHM);
+    
+    printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
+    sleep(1); // wait 5 seconds before refreshing
+    endRead(gameSyncSHM);
+
+    sem_post(&gameSyncSHM->B); // tell master we’re done printing
+  }
+
+  close(gameStateFD);
+  close(gameSyncFD);
 }
 
 void printTablero(int *table, int width, int height) {
@@ -63,4 +92,27 @@ void printTablero(int *table, int width, int height) {
   }
 
   printf("\n");
+}
+
+
+/////////////////////////////////////
+
+void beginRead(gameSyncSHMStruct *sync) {
+  
+  sem_wait(&sync->C);
+  sem_wait(&sync->E);
+  
+  sync->F++;
+  if (sync->F == 1) sem_wait(&sync->D);
+  
+  sem_post(&sync->E);
+  sem_post(&sync->C);
+  
+}
+
+void endRead(gameSyncSHMStruct *sync) {
+  sem_wait(&sync->E);
+  sync->F--;
+  if (sync->F == 0) sem_post(&sync->D);
+  sem_post(&sync->E);
 }
