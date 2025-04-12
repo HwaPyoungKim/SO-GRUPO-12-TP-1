@@ -38,8 +38,8 @@ typedef struct {
     int delay;
     int timeout;
     int seed;
-    char* view_path; // puede ser NULL
-    char* playerPaths[MAX_PLAYERS];
+    char * view_path; // puede ser NULL
+    char * playerPaths[MAX_PLAYERS];
     int playerCount;
 } config_t;
 
@@ -48,17 +48,17 @@ void * createGameSyncSHM(char * name);
 int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState);
 int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]);
 bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned char mov);
-void printTablero(int *table, int width, int height);
+void printTablero(int * table, int width, int height);
 bool validMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * gameStateSHM);
 bool isBorder(int indexPlayer, gameStateSHMStruct * gameStateSHM);
 bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStateSHM);
-void movCases(int mov, int *posX, int *posY);
+void movCases(int mov, int * posX, int * posY);
 bool checkIfOccupied(int posTable, gameStateSHMStruct * gameStateSHM);
-void beginWrite(gameSyncSHMStruct *gameSyncSHM);
-void endWrite(gameSyncSHMStruct *gameSyncSHM);
+void beginWrite(gameSyncSHMStruct * gameSyncSHM);
+void endWrite(gameSyncSHMStruct * gameSyncSHM);
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char * argv[]) {
         //validacion de parametros que se le pasa al master
 //      ● [-w width]: Ancho del tablero. Default y mínimo: 10
 //      ● [-h height]: Alto del tablero. Default y mínimo: 10
@@ -85,7 +85,7 @@ main(int argc, char *argv[]) {
         switch (opt) {
             case 'w':
                 config.width = atoi(optarg);
-                if (config.width < 10) config.width = 10;
+                if (config.width < 10) config.width = 10; // ver si chequear que no nos pasen algo menor a 10
                 break;
             case 'h':
                 config.height = atoi(optarg);
@@ -131,13 +131,13 @@ main(int argc, char *argv[]) {
   }
 
   //Crear las memorias compartidas
-  gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct * ) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
+  gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct *) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
 
   //Crear los semaforos
   gameSyncSHMStruct * gameSyncSHM = (gameSyncSHMStruct *) createGameSyncSHM(GAME_SYNC_SHM_NAME);
 
   //Crear los valores del tablero:
-  int *tablero = gameStateSHM->tableStartPointer;
+  int * tablero = gameStateSHM->tableStartPointer;
     for (int i = 0; i < config.width * config.height; i++) {
       tablero[i] = (rand() % 9) + 1; // recompensa entre 1 y 9
   }
@@ -158,7 +158,7 @@ main(int argc, char *argv[]) {
       snprintf(width_str, sizeof(width_str), "%d", config.width);
       snprintf(height_str, sizeof(height_str), "%d", config.height);
 
-      char *arguments[] = { config.view_path, width_str, height_str, NULL };
+      char * arguments[] = { config.view_path, width_str, height_str, NULL };
 
       execve(config.view_path, arguments, NULL);
 
@@ -414,7 +414,8 @@ void * createGameStateSHM(char * name, config_t * config) {
 
 int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState) {
 
-    if(munmap(gameState, sizeof(gameStateSHMStruct)) == ERROR_VALUE) {
+    size_t totalSize = sizeof(gameState) + sizeof(int) * gameState->tableWidth * gameState->tableHeight;
+    if(munmap(gameState, sizeof(totalSize)) == ERROR_VALUE) { 
       perror("Fallo desmapear la memoria compartida del game state\n");
       return ERROR_VALUE;
     }
@@ -432,7 +433,7 @@ void * createGameSyncSHM(char * name) {
     shm_unlink(name);
        
     int fd;
-    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0644);
+    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0644); // ver este permiso
     
     if(fd == ERROR_VALUE) {
         perror("Fallo al crear la memoria compartida del game sync\n");
@@ -742,7 +743,7 @@ bool checkPosAvailability(int iniMov, int limit, gameStateSHMStruct * gameStateS
 // cantInvalid++;
 // }
 
-void movCases(int mov, int *posX, int *posY) {
+void movCases(int mov, int * posX, int * posY) {
   switch (mov) {
     case 0: {
       (*posY)--;
@@ -842,11 +843,11 @@ bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStateSHM){
 //                   6 = izquierda,                  , 2 = derecha       }
 //                   5 = abajo izquierda,  4 = abajo , 3 = abajo derecha }
 
-void beginWrite(gameSyncSHMStruct *gameSyncSHM) {
+void beginWrite(gameSyncSHMStruct * gameSyncSHM) {
   sem_wait(&gameSyncSHM->D);  // Acquire exclusive access to the state
 }
 
-void endWrite(gameSyncSHMStruct *gameSyncSHM) {
+void endWrite(gameSyncSHMStruct * gameSyncSHM) {
   sem_post(&gameSyncSHM->D);  // Release exclusive access
 }
 

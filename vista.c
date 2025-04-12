@@ -14,10 +14,10 @@
 #define GAME_STATE_SHM_NAME "/game_state"
 #define GAME_SYNC_SHM_NAME "/game_sync"
 
-void endRead(gameSyncSHMStruct *sync);
-void beginRead(gameSyncSHMStruct *sync);
+void endRead(gameSyncSHMStruct * sync);
+void beginRead(gameSyncSHMStruct * sync);
 
-void printTablero(int *table, int width, int height);
+void printTablero(int * table, int width, int height);
 
 int main(int argc, char *argv[]){ 
   //Sleep para que le de tiempo al master de crear la SHM
@@ -44,13 +44,13 @@ int main(int argc, char *argv[]){
     exit(EXIT_FAILURE);
   }
 
-  gameStateSHMStruct *gameStateSHM = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, gameStateFD, 0);
+  gameStateSHMStruct * gameStateSHM = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, gameStateFD, 0);
   if (gameStateSHM == MAP_FAILED) {
     perror("mmap");
     exit(EXIT_FAILURE);
   }
 
-  gameSyncSHMStruct *gameSyncSHM = mmap(NULL, sizeof(gameSyncSHMStruct), PROT_READ | PROT_WRITE, MAP_SHARED, gameSyncFD, 0);
+  gameSyncSHMStruct * gameSyncSHM = mmap(NULL, sizeof(gameSyncSHMStruct), PROT_READ | PROT_WRITE, MAP_SHARED, gameSyncFD, 0);
   if (gameSyncSHM == MAP_FAILED) {
     perror("mmap GAME_SYNC");
     exit(EXIT_FAILURE);
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
   close(gameSyncFD);
 }
 
-void printTablero(int *table, int width, int height) {
+void printTablero(int * table, int width, int height) {
   printf("\nEstado del tablero:\n\n");
 
   for (int y = 0; y < height; y++) {
@@ -97,7 +97,7 @@ void printTablero(int *table, int width, int height) {
 
 /////////////////////////////////////
 
-void beginRead(gameSyncSHMStruct *sync) {
+void beginRead(gameSyncSHMStruct * sync) {
   
   sem_wait(&sync->C);
   sem_wait(&sync->E);
@@ -110,7 +110,7 @@ void beginRead(gameSyncSHMStruct *sync) {
   
 }
 
-void endRead(gameSyncSHMStruct *sync) {
+void endRead(gameSyncSHMStruct * sync) {
   sem_wait(&sync->E);
   sync->F--;
   if (sync->F == 0) sem_post(&sync->D);

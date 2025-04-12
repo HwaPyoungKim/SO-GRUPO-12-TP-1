@@ -460,3 +460,13 @@ gcc -Wall vista.c -o vista -lm
 ./master -p player1 -v vista
 gcc -Wall vista.c -o vista -lm
 ./master -p player1 -v vista
+gcc -Wall vista.c -o vista -lm
+ls
+cd root
+ls
+gcc -Wall vista.c -o vista -lm
+gcc -Wall master.c -o master -lm
+gcc -Wall player.c -o player1 -lm
+gcc -Wall player.c -o player2 -lm
+./master -p player1 player2 -v vista
+exit
