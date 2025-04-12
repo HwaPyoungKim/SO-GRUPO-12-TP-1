@@ -56,22 +56,27 @@ int main(int argc, char *argv[]){
     exit(EXIT_FAILURE);
   }
 
-  while (1) {
+  bool flag = true;
+  while(flag){
     printf("[view] waiting on A...\n");
     sem_wait(&gameSyncSHM->A); // wait for master to signal
-    printf("[view] passed A\n");
-    
-    beginRead(gameSyncSHM);
-    
-    printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
-    sleep(1); // wait 5 seconds before refreshing
-    endRead(gameSyncSHM);
 
+    if(!gameStateSHM->gameState){
+      printf("Entro al flag\n");
+      flag = false;
+    } else {
+      printf("[view] passed A\n");
+      printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
+    }
     sem_post(&gameSyncSHM->B); // tell master we’re done printing
   }
+  
+  printf("Termino vista\n");
 
   close(gameStateFD);
   close(gameSyncFD);
+  
+  return 0;
 }
 
 void printTablero(int * table, int width, int height) {
@@ -96,23 +101,3 @@ void printTablero(int * table, int width, int height) {
 
 
 /////////////////////////////////////
-
-void beginRead(gameSyncSHMStruct * sync) {
-  
-  sem_wait(&sync->C);
-  sem_wait(&sync->E);
-  
-  sync->F++;
-  if (sync->F == 1) sem_wait(&sync->D);
-  
-  sem_post(&sync->E);
-  sem_post(&sync->C);
-  
-}
-
-void endRead(gameSyncSHMStruct * sync) {
-  sem_wait(&sync->E);
-  sync->F--;
-  if (sync->F == 0) sem_post(&sync->D);
-  sem_post(&sync->E);
-}

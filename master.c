@@ -46,6 +46,7 @@ typedef struct {
 void * createGameStateSHM(char * name, config_t * config);
 void * createGameSyncSHM(char * name);
 int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState);
+int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync);
 int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]);
 bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned char mov);
 void printTablero(int * table, int width, int height);
@@ -142,6 +143,8 @@ main(int argc, char * argv[]) {
       tablero[i] = (rand() % 9) + 1; // recompensa entre 1 y 9
   }
 
+  pid_t viewPID;
+
   //Creo el fork a la vista
   if(config.view_path != NULL){
     pid_t pid = fork();
@@ -165,6 +168,8 @@ main(int argc, char * argv[]) {
       // Solo si execve falla:
       perror("execve");
       exit(EXIT_FAILURE);
+    }else{
+      viewPID = pid;
     }
   }
 
@@ -241,11 +246,12 @@ main(int argc, char * argv[]) {
 
       // Solo si execve falla:
       perror("execve");
+      player->isBlocked = true;
       exit(EXIT_FAILURE);
-    }
-    else{
+    } else {
       playerPids[i] = pid;
     }
+  
   }
 
   //Hacer select, escuchar mediante el pipe
@@ -299,10 +305,7 @@ main(int argc, char * argv[]) {
         unsigned char mov;
         int n = read(pipeFD, &mov, 1);
         if(n < 0){
-          perror("read");
-          printf("Player %d closed their pipe (EOF)\n", index);
-          pipePlayerToMaster[index][0] = -1;
-          activePlayers--;
+          perror("fallo en read");
         } else if(n == 0){
           printf("Player %d closed their pipe (EOF)\n", index);
           pipePlayerToMaster[index][0] = -1;
@@ -328,20 +331,16 @@ main(int argc, char * argv[]) {
           
           printf("Verificando si jugador %d está bloqueado: %d\n", index, gameStateSHM->playerList[index].isBlocked);
            
-           
-
            endWrite(gameSyncSHM);
 
            printf("[master] posting A for view\n");
 
+           usleep(config.delay * 1000);
            sem_post(&gameSyncSHM->A);
            sem_wait(&gameSyncSHM->B);           
 
            printf("Active players: %d\n", activePlayers);
            
-
-
-
           //Aplicar logica de juego
         }
         selectedPlayer = (index + 1) % config.playerCount;
@@ -350,14 +349,24 @@ main(int argc, char * argv[]) {
     }
   }
 
+
+
   //Sleep agregado ya que la SHM se borra antes de que vista.c
   //pueda accederla
-  sleep(3);
+  gameStateSHM->gameState = false;
+  sem_post(&gameSyncSHM->A);
+  sem_wait(&gameSyncSHM->B);  
+  
 
   //Borrar las memorias compartidas
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
     exit(EXIT_FAILURE);
   }
+
+  if(deleteGameSyncSHM(GAME_SYNC_SHM_NAME, gameSyncSHM) == ERROR_VALUE){
+    exit(EXIT_FAILURE);
+  }
+  
   //Limpio los pipes
   if(clearPipes(config.playerCount, pipePlayerToMaster) == ERROR_VALUE){
     exit(EXIT_FAILURE);
@@ -367,9 +376,11 @@ main(int argc, char * argv[]) {
     int status;
     waitpid(playerPids[i], &status, 0);
   }
-
-  
-
+  printf("View PID: %d\n", viewPID);
+  if(config.view_path != NULL){
+     int status;
+    waitpid(viewPID, &status, 0);
+  }
 }
 
 //Shared Memory of gameState
@@ -407,7 +418,7 @@ void * createGameStateSHM(char * name, config_t * config) {
     gameState->tableWidth = config->width;
     gameState->tableHeight = config->height;
     gameState->playerQty = config->playerCount;
-    gameState->gameState = false;
+    gameState->gameState = true;
 
     return gameState;
 }
