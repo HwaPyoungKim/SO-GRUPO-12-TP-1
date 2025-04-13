@@ -28,11 +28,12 @@ typedef struct {
 
 
 typedef struct {
-  sem_t A; //pendingPrints; // Se usa para indicarle a la vista que hay cambios por imprimir
-  sem_t B; //finishedPrint; // Se usa para indicarle al master que la vista terminó de imprimir
-  sem_t C; // Mutex para evitar inanición del master al acceder al estado
-  sem_t D; // Mutex para el estado del juego
-  sem_t E; // Mutex para la siguiente variable
-  unsigned int F; // Cantidad de jugadores leyendo el estado
+  sem_t A; //semPendingPrints; // Se usa para indicarle a la vista que hay cambios por imprimir
+  sem_t B; //semFinishedPrints; // Se usa para indicarle al master que la vista terminó de imprimir
+
+  sem_t writerPrivilege; // Mutex para evitar inanición del master al acceder al estado
+  sem_t masterPlayerMutex; //currentGameState; // Mutex para el estado del juego
+  sem_t playersReadingCountMutex; // Mutex para la siguiente variable // Solo lo usa el player para el checkeo con F
+  unsigned int playersReadingCount; // Cantidad de jugadores leyendo el estado
 } gameSyncSHMStruct;
 

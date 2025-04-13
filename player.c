@@ -77,6 +77,12 @@ int main(int argc, char *argv[]){
     // }
 
     while(1){
+        beginRead(gameSyncSHM);
+
+        //consultar estado
+
+        endRead(gameSyncSHM);
+
         unsigned char movimiento = rand() % 8;
         write(1, &movimiento, sizeof(movimiento));
     }
@@ -97,19 +103,21 @@ int main(int argc, char *argv[]){
 
 
 void beginRead(gameSyncSHMStruct *sync) {
-    sem_wait(&sync->C);
-    sem_wait(&sync->E);
-    sync->F++;
-    if (sync->F == 1) sem_wait(&sync->D);
-    sem_post(&sync->E);
-    sem_post(&sync->C);
+    sem_wait(&sync->writerPrivilege);
+    sem_post(&sync->writerPrivilege);
+    
+    sem_wait(&sync->playersReadingCountMutex);
+    sync->playersReadingCount++;
+    if (sync->playersReadingCount == 1) sem_wait(&sync->masterPlayerMutex);
+    sem_post(&sync->playersReadingCountMutex);
+    
 }
 
 void endRead(gameSyncSHMStruct *sync) {
-    sem_wait(&sync->E);
-    sync->F--;
-    if (sync->F == 0) sem_post(&sync->D);
-    sem_post(&sync->E);
+    sem_wait(&sync->playersReadingCountMutex);
+    sync->playersReadingCount--;
+    if (sync->playersReadingCount == 0) sem_post(&sync->masterPlayerMutex);
+    sem_post(&sync->playersReadingCountMutex);
 }
 
 

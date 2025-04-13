@@ -1,81 +1,3 @@
-gcc -Wall -Werror main.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-ls
-cd root
-ls
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-ls
-/a.out hola
-a.out hola
-./a.out hola
-./a.out hola a
-strace ./a.out hola a
-gcc -Wall -Werror master.c && ./a.out
-
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-./a.out 
-./a.out -p
-./a.out -p  player1
-./a.out -w 
-./a.out -w 20 
-clear
-./a.out -w 20 
-./a.out -w 
-./a.out -p player1
-./a.out -p player1 player2
-./a.out -p player1 player2 player3 4 5 6 7 8 9 5
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2 player3 4 5 6 7 8 9 5
-./a.out -p player1 player2 player3 4 5 6 7 8 9 
-./a.out -p
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-clear
-gcc -Wall -Werror master.c && ./a.out
-clear
-clear
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-strace ./a.out -p player1 player2 player3 
-clear
-strace ./a.out -p player1 player2 player3 
-ps
-clear
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-clear
-clear
-gcc -Wall -Werror master.c && ./a.out
 clear
 gcc -Wall -Werror master.c && ./a.out
 clear
@@ -469,4 +391,110 @@ gcc -Wall master.c -o master -lm
 gcc -Wall player.c -o player1 -lm
 gcc -Wall player.c -o player2 -lm
 ./master -p player1 player2 -v vista
+exit
+cd
+ls
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ls
+gcc -Wall player.c -o player1 -lm
+gcc -Wall player.c -o player2 -lm
+./master -p player1 player2 -v vista
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ps
+kill vista
+kill 29
+kill 38
+ps
+gcc -Wall vista.c -o vista -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ps
+strace ./master -p player1 player2 -v vista
+ps
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ps
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ps
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+strace ./master -p player1 player2 -v vista
+ps
+kill 72
+ps
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+clear
+clear
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ps
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ps
+kill 128
+kill 138
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+ps
+gcc -Wall vista.c -o vista -lm
+./master -p player1 player2 -v vista
+ps
+gcc -Wall vista.c -o vista -lm
+./master -p player1 player2 -v vista
+ps
+gcc -Wall vista.c -o vista -lm
+./master -p player1 player2 -v vista
+gcc -Wall vista.c -o vista -lm
+./master -p player1 player2 -v vista
+ps
+gcc -Wall vista.c -o vista -lm
+./master -p player1 player2 -v vista
+gcc -Wall vista.c -o vista -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+mas usleep
+man usleep
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista
+./master -p player1 player2 -v vista -d 1000
+./master -p player1 player2 -v vista -d 1
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+ps
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+clear
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+clear
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
 exit

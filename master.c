@@ -22,6 +22,8 @@
 #define LIMITMOVEINTERIOR 8
 #define LIMITMOVEBORDER 5
 #define LIMITMOVECORNER 3
+#define MILISECS_TO_SECS 1000
+#define MICROSECS_TO_MILISECS 1000
 
 #define MAX_PLAYERS 9
 
@@ -257,8 +259,10 @@ main(int argc, char * argv[]) {
   //Hacer select, escuchar mediante el pipe
   int activePlayers = gameStateSHM->playerQty;
   int selectedPlayer = 0;
-  
-  while(activePlayers > 0){
+  size_t validMoveInterval = 0;
+
+  while(activePlayers > 0 && gameStateSHM->gameState){
+
     fd_set pipeSet;
     FD_ZERO(&pipeSet);
     int maxFD = -1;
@@ -285,15 +289,15 @@ main(int argc, char * argv[]) {
     }
 
     if(ready == 0){
-      //Terminar si no responde por tantos segundos
-
-      //sino continuar
+      if(validMoveInterval > (config.timeout * 1000)){
+        gameStateSHM->gameState = false;
+      }
       continue;
     }
 
     //Reiniciar contador de tiempo
 
-    for(int i = 0; i < gameStateSHM->playerQty; i++){
+    for(int i = 0; i < gameStateSHM->playerQty && gameStateSHM->gameState; i++){
       int index = (selectedPlayer + i) % gameStateSHM->playerQty;
       int pipeFD = pipePlayerToMaster[index][0];
 
@@ -312,34 +316,41 @@ main(int argc, char * argv[]) {
           activePlayers--;
         } else {
           //Leyo el movimiento
+
           beginWrite(gameSyncSHM);
+          
           printf("player %d current pos: X:%d Y:%d\n\n", index+1, gameStateSHM->playerList[index].tableX, gameStateSHM->playerList[index].tableY);
           printf("Jugador %d intento mover: %d\n", index+1, mov);
-           bool stateMove = validMove(mov, index, gameStateSHM);
-           printf("Resultado de validMove para jugador %d: %d\n", index+1, stateMove);
-           if(!stateMove){
-             printf("Jugador %d hizo un movimiento inválido: %d\n", index+1, mov);
-            
-             if (gameStateSHM->playerList[index].isBlocked && pipePlayerToMaster[index][0] != -1) {
+          bool stateMove = validMove(mov, index, gameStateSHM);
+          printf("Resultado de validMove para jugador %d: %d\n", index+1, stateMove);
+          if(!stateMove){
+            printf("Jugador %d hizo un movimiento inválido: %d\n", index+1, mov);
+            if (gameStateSHM->playerList[index].isBlocked && pipePlayerToMaster[index][0] != -1) {
               printf("Jugador %d está bloqueado. Cerrando su pipe y disminuyendo jugadores activos.\n", index+1);
               close(pipePlayerToMaster[index][0]);
               pipePlayerToMaster[index][0] = -1;
               activePlayers--;
             }
-          
-           }
+          } else {
+            validMoveInterval = 0;
+          }
           
           printf("Verificando si jugador %d está bloqueado: %d\n", index, gameStateSHM->playerList[index].isBlocked);
            
-           endWrite(gameSyncSHM);
+          endWrite(gameSyncSHM);
 
-           printf("[master] posting A for view\n");
+          printf("[master] posting A for view\n");
 
-           usleep(config.delay * 1000);
-           sem_post(&gameSyncSHM->A);
-           sem_wait(&gameSyncSHM->B);           
+          usleep(config.delay * MICROSECS_TO_MILISECS);
+          validMoveInterval += (size_t)config.delay;
+          printf("%d and %zu\n", config.timeout * 1000, validMoveInterval);
 
-           printf("Active players: %d\n", activePlayers);
+          if(config.view_path != NULL){
+            sem_post(&gameSyncSHM->A);
+            sem_wait(&gameSyncSHM->B);   
+          }
+      
+          printf("Active players: %d\n", activePlayers);
            
           //Aplicar logica de juego
         }
@@ -349,14 +360,11 @@ main(int argc, char * argv[]) {
     }
   }
 
-
-
-  //Sleep agregado ya que la SHM se borra antes de que vista.c
-  //pueda accederla
   gameStateSHM->gameState = false;
-  sem_post(&gameSyncSHM->A);
-  sem_wait(&gameSyncSHM->B);  
-  
+  if(config.view_path != NULL){
+    sem_post(&gameSyncSHM->A);
+    sem_wait(&gameSyncSHM->B);  
+  }
 
   //Borrar las memorias compartidas
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
@@ -376,7 +384,7 @@ main(int argc, char * argv[]) {
     int status;
     waitpid(playerPids[i], &status, 0);
   }
-  printf("View PID: %d\n", viewPID);
+
   if(config.view_path != NULL){
      int status;
     waitpid(viewPID, &status, 0);
@@ -473,22 +481,22 @@ void * createGameSyncSHM(char * name) {
       return NULL;
     }
 
-    if(sem_init(&(gameSync->C), 1, 1) == ERROR_VALUE) {
-      perror("Fallo crear el semaforo C\n");
+    if(sem_init(&(gameSync->writerPrivilege), 1, 1) == ERROR_VALUE) {
+      perror("Fallo crear el semaforo writerPrivilege\n");
       return NULL;
     }
 
-    if(sem_init(&(gameSync->D), 1, 1) == ERROR_VALUE) {
+    if(sem_init(&(gameSync->masterPlayerMutex), 1, 1) == ERROR_VALUE) {
       perror("Fallo crear el semaforo D\n");
       return NULL;
     }
 
-    if(sem_init(&(gameSync->E), 1, 1) == ERROR_VALUE) {
-      perror("Fallo crear el semaforo E\n");
+    if(sem_init(&(gameSync->playersReadingCountMutex), 1, 1) == ERROR_VALUE) {
+      perror("Fallo crear el semaforo playersReadingCountMutex\n");
       return NULL;  
     }
 
-    gameSync->F = 0;
+    gameSync->playersReadingCount = 0;
 
     if(close(fd) == ERROR_VALUE) {
         perror("Fallo cerrar la memoria compartida del game sync\n");
@@ -512,18 +520,18 @@ int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
       return ERROR_VALUE;
     }
 
-    if(sem_destroy(&(gameSync->C)) == ERROR_VALUE) {
-      perror("Fallo cerrar el semaforo C");
+    if(sem_destroy(&(gameSync->writerPrivilege)) == ERROR_VALUE) {
+      perror("Fallo cerrar el semaforo writerPrivilege");
       return ERROR_VALUE;
     }
 
-    if(sem_destroy(&(gameSync->D)) == ERROR_VALUE) {
+    if(sem_destroy(&(gameSync->masterPlayerMutex)) == ERROR_VALUE) {
       perror("Fallo cerrar el semaforo D");
       return ERROR_VALUE;
     }
 
-    if(sem_destroy(&(gameSync->E)) == ERROR_VALUE) {
-      perror("Fallo cerrar el semaforo E");
+    if(sem_destroy(&(gameSync->playersReadingCountMutex)) == ERROR_VALUE) {
+      perror("Fallo cerrar el semaforo playersReadingCountMutex");
       return ERROR_VALUE;
     }
 
@@ -855,11 +863,13 @@ bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStateSHM){
 //                   5 = abajo izquierda,  4 = abajo , 3 = abajo derecha }
 
 void beginWrite(gameSyncSHMStruct * gameSyncSHM) {
-  sem_wait(&gameSyncSHM->D);  // Acquire exclusive access to the state
+  sem_wait(&gameSyncSHM->writerPrivilege);  // Impide que se agreguen lectores
+  sem_wait(&gameSyncSHM->masterPlayerMutex); //Acceso a que corra el master
+  sem_post(&gameSyncSHM->writerPrivilege);  //Libera escritura
 }
 
 void endWrite(gameSyncSHMStruct * gameSyncSHM) {
-  sem_post(&gameSyncSHM->D);  // Release exclusive access
+  sem_post(&gameSyncSHM->masterPlayerMutex);  // Libera acceso privilegiado
 }
 
 
