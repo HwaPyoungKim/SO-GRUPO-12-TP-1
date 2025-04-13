@@ -14,8 +14,6 @@
 
 #define GAME_STATE_SHM_NAME "/game_state"
 #define GAME_SYNC_SHM_NAME "/game_sync"
-
-// Define colors
 #define PLAYER_COLOR 1
 #define DEFAULT_COLOR 2
 
@@ -27,10 +25,7 @@ void printTablero(int * table, int width, int height);
 
 int main(int argc, char *argv[]){ 
 
-  // Set the TERM variable to a known terminal type (e.g., xterm)
-  setenv("TERM", "xterm", 1);  // Setting TERM to 'xterm'
-
-  // Start ncurses
+  setenv("TERM", "xterm", 1); 
   initscr();
   noecho();
   curs_set(FALSE);
@@ -93,76 +88,85 @@ int main(int argc, char *argv[]){
   return 0;
 }
 
-void printTablero(int * table, int width, int height) {
-  printf("\nEstado del tablero:\n\n");
+// void printTablero(int * table, int width, int height) {
+//   printf("\nEstado del tablero:\n\n");
 
-  for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
+//   for (int y = 0; y < height; y++) {
+//       for (int x = 0; x < width; x++) {
+//           int index = y * width + x;
+//           int cell = table[index];
+
+//           if (cell > 0) {
+//               printf(" %d  ", cell); // recompensa (1-9)
+//           } else {
+//               printf(" P%d ", -cell); // jugador (almacenado como -1, -2, etc.)
+//           }
+//       }
+//       printf("\n\n");
+//   }
+
+//   printf("\n");
+// }
+
+void drawBoard(gameStateSHMStruct *gameState) {
+  clear(); 
+  start_color();
+
+  for(int i = 0; i < 9; i++) {
+      init_pair(i + 1, i + 1, COLOR_BLACK);
+  }
+  init_pair(10, COLOR_WHITE, COLOR_BLACK);
+  init_pair(11, COLOR_WHITE, COLOR_BLACK); 
+
+  int width = gameState->tableWidth;
+  int height = gameState->tableHeight;
+  int * table = gameState->tableStartPointer;
+
+  for(int y = 0; y < height; y++) {
+      for(int x = 0; x < width; x++) {
           int index = y * width + x;
           int cell = table[index];
 
-          if (cell > 0) {
-              printf(" %d  ", cell); // recompensa (1-9)
-          } else {
-              printf(" P%d ", -cell); // jugador (almacenado como -1, -2, etc.)
+          bool isLatest = false;
+          int playerIndex = -1;
+
+          for(int i = 0; i < gameState->playerQty; i++) {
+              if (gameState->playerList[i].tableX == x && gameState->playerList[i].tableY == y) {
+                  isLatest = true;
+                  playerIndex = i;
+                  break;
+              }
+          }
+          if (isLatest) {
+              attron(COLOR_PAIR(playerIndex + 1));
+              mvprintw(y, x * 4, "P%d", playerIndex + 1);
+              attroff(COLOR_PAIR(playerIndex + 1));
+          } else if (cell < 0) {
+              int jugadorID = -cell;
+              attron(COLOR_PAIR(10));
+              mvprintw(y, x * 4, "P%d", jugadorID);
+              attroff(COLOR_PAIR(10));
+          } else if (cell > 0) {
+              attron(COLOR_PAIR(10));
+              mvprintw(y, x * 4, " %d ", cell);
+              attroff(COLOR_PAIR(10));
           }
       }
-      printf("\n\n");
   }
 
-  printf("\n");
-}
-
-void drawBoard(gameStateSHMStruct *gameState) {
-  clear(); // Clears the screen before redrawing the board
-
-  // Initialize color pairs (You can change the color codes as needed)
-  start_color();
-  init_pair(PLAYER_COLOR, COLOR_RED, COLOR_BLACK);  // Player positions in red
-  init_pair(DEFAULT_COLOR, COLOR_WHITE, COLOR_BLACK);  // Default cells in white
-
-  // Loop through each player to highlight their current position
-  for (int y = 0; y < gameState->tableHeight; y++) {
-    for (int x = 0; x < gameState->tableWidth; x++) {
-      int index = y * gameState->tableWidth + x;
-      int cellValue = gameState->tableStartPointer[index];
-
-      // Find if this cell is occupied by a player
-      bool isPlayerCell = false;
-      int i;
-      for (i = 0; i < gameState->playerQty; i++) {
-        if (gameState->playerList[i].tableX == x && gameState->playerList[i].tableY == y) {
-          isPlayerCell = true;
-          break;  // Player found, no need to check further players
-        }
-      }
-      if (isPlayerCell) {
-        // If it's a player, highlight the position
-        attron(COLOR_PAIR(PLAYER_COLOR));
-        mvprintw(y, x * 4, " P%d ", i+1);  // Adjust column spacing for better alignment
-        attroff(COLOR_PAIR(PLAYER_COLOR));
-      } else {
-        // Else, print with default color
-        attron(COLOR_PAIR(DEFAULT_COLOR));
-        if (cellValue > 0) {
-          mvprintw(y, x * 4, " %d ", cellValue);  // Print regular cell values
-        } else {
-          mvprintw(y, x * 4, " . ");  // Print empty cell
-        }
-        attroff(COLOR_PAIR(DEFAULT_COLOR));
-      }
-    }
-  }
-  int base_y = gameState->tableHeight + 1;
-
-  mvprintw(base_y, 0, "PUNTAJES:");
+  int baseY = gameState->tableHeight + 1;
+  attron(COLOR_PAIR(11));
+  mvprintw(baseY, 0, "PUNTAJES:");
+  attroff(COLOR_PAIR(11));
 
   for (int i = 0; i < gameState->playerQty; i++) {
-
-    mvprintw(base_y + i + 1, 0,
-        "Jugador %d (%s): %d pts | Movs válidos: %d | Inválidos: %d",
-        i+1, gameState->playerList[i].playerName, gameState->playerList[i].score, gameState->playerList[i].validMoveQty, gameState->playerList[i].invalidMoveQty);
+      attron(COLOR_PAIR(i + 1));
+      mvprintw(baseY + i + 1, 0,
+               "Jugador %d (%s): %d pts | Movs válidos: %d | Inválidos: %d",
+               i + 1, gameState->playerList[i].playerName, gameState->playerList[i].score,
+               gameState->playerList[i].validMoveQty, gameState->playerList[i].invalidMoveQty);
+      attroff(COLOR_PAIR(i + 1));
   }
 
-  refresh(); // Update the screen
+  refresh(); 
 }
