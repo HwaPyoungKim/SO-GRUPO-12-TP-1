@@ -31,7 +31,7 @@ static void applyMovement(int playerID, unsigned char mov, gameStateSHMStruct * 
 }
 
 // Verifica si un jugador está bloqueado
-void printPlayer(int playerIndex, gameStateSHMStruct * gameStateSHM){
-  printf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[playerIndex].playerName, playerIndex, 0, gameStateSHM->playerList[playerIndex].score,gameStateSHM->playerList[playerIndex].validMoveQty, gameStateSHM->playerList[playerIndex].invalidMoveQty);
+void printPlayer(int playerIndex, int status,gameStateSHMStruct * gameStateSHM){
+  printf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[playerIndex].playerName, playerIndex, status, gameStateSHM->playerList[playerIndex].score,gameStateSHM->playerList[playerIndex].validMoveQty, gameStateSHM->playerList[playerIndex].invalidMoveQty);
   return;
 }

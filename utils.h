@@ -16,6 +16,6 @@ unsigned char findBestMove();
 bool playerIsBlocked();
 
 // Verifica si un jugador está bloqueado
-void printPlayer(int playerIndex, gameStateSHMStruct * gameStateSHM);
+void printPlayer(int playerIndex, int status,gameStateSHMStruct * gameStateSHM);
 
 #endif

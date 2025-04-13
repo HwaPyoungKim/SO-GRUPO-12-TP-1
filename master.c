@@ -323,8 +323,15 @@ main(int argc, char * argv[]) {
     sem_wait(&gameSyncSHM->B);  
   }
 
-  for (int i = 0; i < gameStateSHM->playerQty; i++){
-    printf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[i].playerName, i, 0, gameStateSHM->playerList[i].score,gameStateSHM->playerList[i].validMoveQty, gameStateSHM->playerList[i].invalidMoveQty);
+  for (int i = 0; i < config.playerCount; i++) {
+    int status;
+    waitpid(playerPids[i], &status, 0);
+    printPlayer(i, status, gameStateSHM);
+  }
+
+  if(config.view_path != NULL){
+     int status;
+    waitpid(viewPID, &status, 0);
   }
 
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
@@ -337,16 +344,6 @@ main(int argc, char * argv[]) {
   
   if(clearPipes(config.playerCount, pipePlayerToMaster) == ERROR_VALUE){
     exit(EXIT_FAILURE);
-  }
-
-  for (int i = 0; i < config.playerCount; i++) {
-    int status;
-    waitpid(playerPids[i], &status, 0);
-  }
-
-  if(config.view_path != NULL){
-     int status;
-    waitpid(viewPID, &status, 0);
   }
 }
 
