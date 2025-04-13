@@ -1,38 +1,3 @@
-clear
-gcc -Wall -Werror master.c && ./a.out
-clear
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-clear
-clear
-gcc -Wall -Werror master.c && ./a.out
-clear
-gcc -Wall -Werror master.c && ./a.out
-clear
-gcc -Wall -Werror master.c && ./a.out
-clear
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-clear
-clear
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-ls
-gcc -Wall -Werror player.c -o player1
-gcc -Wall -Werror player.c -o player2
-./a.out -p player1 player2
-strace ./a.out -p player1 player2
-clear
-clear
-strace ./a.out -p player1 player2
-clear
-gcc -Wall -Werror player.c -o player2
-strace ./a.out -p player1 player2
-./a.out -p player1 player2
-./a.out -p 
-./a.out -p player1 player2
 gcc -Wall -Werror player.c -o player2
 ./a.out -p player1 player2
 strace ./a.out -p player1 player2
@@ -496,5 +461,40 @@ gcc -Wall master.c -o master -lm
 gcc -Wall master.c -o master -lm
 ./master -p player1 player2 -v vista 
 gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+exit
+cd
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+sudo apt update
+apt update
+apt install libncurses5-dev libncursesw5-dev
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+./master -p player1 player2 -v vista 
+./master -p player1 player2 -v vista 
+ls
+gcc -Wall player.c -o player1 -lm
+gcc -Wall player.c -o player2 -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+./master -p player1 player2 -v vista 
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+clear
+clear
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+./master -p player1 player2 -v vista 
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
 ./master -p player1 player2 -v vista 
 exit

@@ -120,6 +120,18 @@ main(int argc, char * argv[]) {
        return -1;
   }
 
+  printf("width: %d\n", config.width);
+  printf("height: %d\n", config.height);
+  printf("delay: %d\n", config.delay);
+  printf("timeout: %d\n", config.timeout);
+  printf("seed: %d\n", config.seed);
+  printf("view: %s\n", config.view_path == NULL ? "-" : config.view_path);
+  printf("num_players: %d\n", config.playerCount);
+  for (int i = 0; i < config.playerCount; i++){
+    printf("  %s\n", config.playerPaths[i]);
+  }
+  
+
   //Crear las memorias compartidas
   gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct *) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
 
@@ -319,6 +331,10 @@ main(int argc, char * argv[]) {
   if(config.view_path != NULL){
     sem_post(&gameSyncSHM->A);
     sem_wait(&gameSyncSHM->B);  
+  }
+
+  for (int i = 0; i < gameStateSHM->playerQty; i++){
+    printf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[i].playerName, i, 0, gameStateSHM->playerList[i].score,gameStateSHM->playerList[i].validMoveQty, gameStateSHM->playerList[i].invalidMoveQty);
   }
 
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
