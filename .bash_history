@@ -1,19 +1,3 @@
-gcc -Wall -Werror player.c -o player2
-./a.out -p player1 player2
-strace ./a.out -p player1 player2
-gcc -Wall -Werror player.c -o player2
-strace ./a.out -p player1 player2
-clear
-strace ./a.out -p player1 player2
-./a.out -p player1 player2
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2
 gcc -Wall -Werror master.c && ./a.out
 ./a.out -p player1 player2
 strace ./a.out -p player1 player2
@@ -496,5 +480,21 @@ gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
 gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
 ./master -p player1 player2 -v vista 
 gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+./master -p player1 player2 -v vista 
+exit
+cd
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm
+./master -p player1 player2 -v vista 
+cd
+ls
+./master -p player1 player2 -v vista 
+./master -p player1 player2 -v vista 
+clear
+gcc -Wall master.c -o master -lm
 ./master -p player1 player2 -v vista 
 exit
