@@ -30,10 +30,6 @@
 #define WRITE 0
 #define READ 1
 
-// typedef enum {
-//   NORTH, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST
-// } Direction;
-
 typedef struct {
     int width;
     int height;
@@ -62,15 +58,6 @@ void endWrite(gameSyncSHMStruct * gameSyncSHM);
 
 int
 main(int argc, char * argv[]) {
-        //validacion de parametros que se le pasa al master
-//      ● [-w width]: Ancho del tablero. Default y mínimo: 10
-//      ● [-h height]: Alto del tablero. Default y mínimo: 10
-//      ● [-d delay]: milisegundos que espera el máster cada vez que se imprime el estado. Default: 200
-//      ● [-t timeout]: Timeout en segundos para recibir solicitudes de movimientos válidos. Default: 10
-//      ● [-s seed]: Semilla utilizada para la generación del tablero. Default: time(NULL)
-//      ● [-v view]: Ruta del binario de la vista. Default: Sin vista.
-//      ● -p player1 player2: Ruta/s de los binarios de los jugadores. Mínimo: 1, Máximo: 9
-//./CHomdasdads -h 200 -s 2000
 
   config_t config;
 
@@ -147,7 +134,6 @@ main(int argc, char * argv[]) {
 
   pid_t viewPID;
 
-  //Creo el fork a la vista
   if(config.view_path != NULL){
     pid_t pid = fork();
     if (pid == ERROR_VALUE) {
@@ -156,9 +142,6 @@ main(int argc, char * argv[]) {
     }
 
     if(pid == 0){
-      //Pipes para vista
-
-      // Armo argumentos
       char width_str[10], height_str[10];
       snprintf(width_str, sizeof(width_str), "%d", config.width);
       snprintf(height_str, sizeof(height_str), "%d", config.height);
@@ -167,7 +150,6 @@ main(int argc, char * argv[]) {
 
       execve(config.view_path, arguments, NULL);
 
-      // Solo si execve falla:
       perror("execve");
       exit(EXIT_FAILURE);
     }else{
@@ -178,11 +160,6 @@ main(int argc, char * argv[]) {
   int pipePlayerToMaster[config.playerCount][2];
   pid_t playerPids[config.playerCount];
 
-  // for (int i = 0; i < config.playerCount; i++){
-  //   printf(config.playerPaths[i]);
-  // }
-
-  //Crear separacion de jugadores
   int width = gameStateSHM->tableWidth;
   int height = gameStateSHM->tableHeight;
   int playerQty = gameStateSHM->playerQty;
@@ -218,16 +195,13 @@ main(int argc, char * argv[]) {
     player->tableY = y; 
     player->isBlocked = false;
 
-    // asignamos la posicion inicial de cada jugador segun los calculos de la funcion
     gameStateSHM->tableStartPointer[y * width + x] = (i + 1) * (-1); 
 
-    //Creamos pipes de player a master
     if (pipe(pipePlayerToMaster[i]) == ERROR_VALUE) {
       perror("Error in pipe player to master");
       exit(EXIT_FAILURE);
     }
 
-    //Creamos procesos hijos
     pid_t pid = fork();
     if (pid == ERROR_VALUE) {
       perror("fork");
@@ -237,7 +211,7 @@ main(int argc, char * argv[]) {
     if(pid == 0){
       close(pipePlayerToMaster[i][0]); // Cierra lectura
       dup2(pipePlayerToMaster[i][1], STDOUT_FILENO); // Redirige stdout al pipe
-      // Armo argumentos
+
       char width_str[10], height_str[10];
       snprintf(width_str, sizeof(width_str), "%d", config.width);
       snprintf(height_str, sizeof(height_str), "%d", config.height);
@@ -246,7 +220,6 @@ main(int argc, char * argv[]) {
 
       execve(config.playerPaths[i], arguments, NULL);
 
-      // Solo si execve falla:
       perror("execve");
       player->isBlocked = true;
       exit(EXIT_FAILURE);
@@ -256,7 +229,6 @@ main(int argc, char * argv[]) {
   
   }
 
-  //Hacer select, escuchar mediante el pipe
   int activePlayers = gameStateSHM->playerQty;
   int selectedPlayer = 0;
   size_t validMoveInterval = 0;
@@ -295,8 +267,6 @@ main(int argc, char * argv[]) {
       continue;
     }
 
-    //Reiniciar contador de tiempo
-
     for(int i = 0; i < gameStateSHM->playerQty && gameStateSHM->gameState; i++){
       int index = (selectedPlayer + i) % gameStateSHM->playerQty;
       int pipeFD = pipePlayerToMaster[index][0];
@@ -311,22 +281,16 @@ main(int argc, char * argv[]) {
         if(n < 0){
           perror("fallo en read");
         } else if(n == 0){
-          printf("Player %d closed their pipe (EOF)\n", index);
           pipePlayerToMaster[index][0] = -1;
           activePlayers--;
         } else {
           //Leyo el movimiento
-
           beginWrite(gameSyncSHM);
-          
-          printf("player %d current pos: X:%d Y:%d\n\n", index+1, gameStateSHM->playerList[index].tableX, gameStateSHM->playerList[index].tableY);
-          printf("Jugador %d intento mover: %d\n", index+1, mov);
           bool stateMove = validMove(mov, index, gameStateSHM);
-          printf("Resultado de validMove para jugador %d: %d\n", index+1, stateMove);
           if(!stateMove){
-            printf("Jugador %d hizo un movimiento inválido: %d\n", index+1, mov);
+            
             if (gameStateSHM->playerList[index].isBlocked && pipePlayerToMaster[index][0] != -1) {
-              printf("Jugador %d está bloqueado. Cerrando su pipe y disminuyendo jugadores activos.\n", index+1);
+              
               close(pipePlayerToMaster[index][0]);
               pipePlayerToMaster[index][0] = -1;
               activePlayers--;
@@ -335,24 +299,15 @@ main(int argc, char * argv[]) {
             validMoveInterval = 0;
           }
           
-          printf("Verificando si jugador %d está bloqueado: %d\n", index, gameStateSHM->playerList[index].isBlocked);
-           
           endWrite(gameSyncSHM);
-
-          printf("[master] posting A for view\n");
 
           usleep(config.delay * MICROSECS_TO_MILISECS);
           validMoveInterval += (size_t)config.delay;
-          printf("%d and %zu\n", config.timeout * 1000, validMoveInterval);
 
           if(config.view_path != NULL){
             sem_post(&gameSyncSHM->A);
             sem_wait(&gameSyncSHM->B);   
-          }
-      
-          printf("Active players: %d\n", activePlayers);
-           
-          //Aplicar logica de juego
+          }  
         }
         selectedPlayer = (index + 1) % config.playerCount;
         break;
@@ -366,7 +321,6 @@ main(int argc, char * argv[]) {
     sem_wait(&gameSyncSHM->B);  
   }
 
-  //Borrar las memorias compartidas
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
     exit(EXIT_FAILURE);
   }
@@ -375,11 +329,10 @@ main(int argc, char * argv[]) {
     exit(EXIT_FAILURE);
   }
   
-  //Limpio los pipes
   if(clearPipes(config.playerCount, pipePlayerToMaster) == ERROR_VALUE){
     exit(EXIT_FAILURE);
   }
-  //Esperamos a los hijos para terminar
+
   for (int i = 0; i < config.playerCount; i++) {
     int status;
     waitpid(playerPids[i], &status, 0);
@@ -390,8 +343,6 @@ main(int argc, char * argv[]) {
     waitpid(viewPID, &status, 0);
   }
 }
-
-//Shared Memory of gameState
 
 void * createGameStateSHM(char * name, config_t * config) {
     shm_unlink(name);
@@ -445,8 +396,6 @@ int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState) {
     }
     return 0;
 }
-
-//Shared Memory of gameSync
 
 void * createGameSyncSHM(char * name) {
     shm_unlink(name);
@@ -566,32 +515,17 @@ bool validMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * gameStat
   }
 
   bool moveOk = checkMovement(indexPlayer, gameStateSHM, mov);
-  printf("checkMovement → %d\n", moveOk);
 
   if (!moveOk) {
     bool hasMoves = checkMoveAvailability(indexPlayer, gameStateSHM);
-    printf("checkMoveAvailability → %d\n", hasMoves);
-
     if (!hasMoves) {
         gameStateSHM->playerList[indexPlayer].isBlocked = true;
-        printf("Jugador %d marcado como bloqueado\n", indexPlayer);
     }
 
     gameStateSHM->playerList[indexPlayer].invalidMoveQty++;
     return false;
 
   }
-
-
-  // if(!checkMovement(indexPlayer, gameStateSHM, mov)){
-  //   if(!checkMoveAvailability(indexPlayer, gameStateSHM)){
-  //     //player no tiene mas movimientos posibles
-  //     gameStateSHM->playerList[indexPlayer].isBlocked = true;
-  //     printf("Jugador %d marcado como bloqueado\n", indexPlayer);
-  //   }
-  //   gameStateSHM->playerList[indexPlayer].invalidMoveQty++;
-  //   return false;
-  // }
 
   gameStateSHM->playerList[indexPlayer].validMoveQty++;
   
@@ -754,14 +688,6 @@ bool checkPosAvailability(int iniMov, int limit, gameStateSHMStruct * gameStateS
   return false;  
 }
 
-// if(posX >= 0 && posX < gameStateSHM->tableWidth && posY >= 0 && posY < gameStateSHM->tableHeight){
-//   playerPosInTable = (posY * gameStateSHM->tableWidth) + posX;
-//   if(!checkIfOccupied(playerPosInTable, gameStateSHM)){
-//    return true;
-//  }
-// cantInvalid++;
-// }
-
 void movCases(int mov, int * posX, int * posY) {
   switch (mov) {
     case 0: {
@@ -829,8 +755,6 @@ bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStateSHM){
     }
   }
   
-  
-  // Player is on the border but not in any corner (left column, right column, top row, bottom row)
   else {
       // For example, if the player is on the left column (excluding corners)
       if (gameStateSHM->playerList[indexPlayer].tableX == 0) {
@@ -860,17 +784,14 @@ bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStateSHM){
 
 // validMovements = {7 = arriba izquierda, 0 = arriba, 1 = arriba derecha}
 //                   6 = izquierda,                  , 2 = derecha       }
-//                   5 = abajo izquierda,  4 = abajo , 3 = abajo derecha }
+//                   5 = abajo izquierda,  4 = abajo , 3 = abajo derecha } 
 
 void beginWrite(gameSyncSHMStruct * gameSyncSHM) {
-  sem_wait(&gameSyncSHM->writerPrivilege);  // Impide que se agreguen lectores
-  sem_wait(&gameSyncSHM->masterPlayerMutex); //Acceso a que corra el master
-  sem_post(&gameSyncSHM->writerPrivilege);  //Libera escritura
+  sem_wait(&gameSyncSHM->writerPrivilege);    // Impide que se agreguen lectores
+  sem_wait(&gameSyncSHM->masterPlayerMutex);  //Acceso a que corra el master
+  sem_post(&gameSyncSHM->writerPrivilege);    //Libera escritura
 }
 
 void endWrite(gameSyncSHMStruct * gameSyncSHM) {
   sem_post(&gameSyncSHM->masterPlayerMutex);  // Libera acceso privilegiado
 }
-
-
-

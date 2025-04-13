@@ -129,7 +129,8 @@ void drawBoard(gameStateSHMStruct *gameState) {
 
       // Find if this cell is occupied by a player
       bool isPlayerCell = false;
-      for (int i = 0; i < gameState->playerQty; i++) {
+      int i;
+      for (i = 0; i < gameState->playerQty; i++) {
         if (gameState->playerList[i].tableX == x && gameState->playerList[i].tableY == y) {
           isPlayerCell = true;
           break;  // Player found, no need to check further players
@@ -138,7 +139,7 @@ void drawBoard(gameStateSHMStruct *gameState) {
       if (isPlayerCell) {
         // If it's a player, highlight the position
         attron(COLOR_PAIR(PLAYER_COLOR));
-        mvprintw(y, x * 4, " P ");  // Adjust column spacing for better alignment
+        mvprintw(y, x * 4, " P%d ", i+1);  // Adjust column spacing for better alignment
         attroff(COLOR_PAIR(PLAYER_COLOR));
       } else {
         // Else, print with default color
@@ -151,6 +152,16 @@ void drawBoard(gameStateSHMStruct *gameState) {
         attroff(COLOR_PAIR(DEFAULT_COLOR));
       }
     }
+  }
+  int base_y = gameState->tableHeight + 1;
+
+  mvprintw(base_y, 0, "PUNTAJES:");
+
+  for (int i = 0; i < gameState->playerQty; i++) {
+
+    mvprintw(base_y + i + 1, 0,
+        "Jugador %d (%s): %d pts | Movs válidos: %d | Inválidos: %d",
+        i+1, gameState->playerList[i].playerName, gameState->playerList[i].score, gameState->playerList[i].validMoveQty, gameState->playerList[i].invalidMoveQty);
   }
 
   refresh(); // Update the screen
