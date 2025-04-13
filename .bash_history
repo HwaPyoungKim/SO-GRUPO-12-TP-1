@@ -1,7 +1,3 @@
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2
-strace ./a.out -p player1 player2
-gcc -Wall -Werror master.c && ./a.out
 ./a.out -p player1 player2
 clear
 ./a.out -p player1 player2
@@ -497,4 +493,8 @@ ls
 clear
 gcc -Wall master.c -o master -lm
 ./master -p player1 player2 -v vista 
+exit
+cd
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm -utils.c
 exit

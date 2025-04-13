@@ -3,6 +3,14 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <semaphore.h>
+#include <stdint.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
+#include <math.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
 
 typedef struct {
   char playerName[16]; // Nombre del jugador

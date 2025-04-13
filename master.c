@@ -1,15 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <sys/mman.h>
 #include "sharedMemory.h"
-#include <stdint.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <time.h>
-#include <math.h>
+
 
 #define DEFAULT_HEIGHT 10
 #define DEFAULT_WIDTH 10
