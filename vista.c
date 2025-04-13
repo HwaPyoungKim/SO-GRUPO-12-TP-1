@@ -58,20 +58,16 @@ int main(int argc, char *argv[]){
 
   bool flag = true;
   while(flag){
-    printf("[view] waiting on A...\n");
     sem_wait(&gameSyncSHM->A); // wait for master to signal
 
     if(!gameStateSHM->gameState){
-      printf("Entro al flag\n");
       flag = false;
     } else {
-      printf("[view] passed A\n");
       printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
     }
     sem_post(&gameSyncSHM->B); // tell master we’re done printing
   }
-  
-  printf("Termino vista\n");
+
 
   close(gameStateFD);
   close(gameSyncFD);
@@ -98,6 +94,3 @@ void printTablero(int * table, int width, int height) {
 
   printf("\n");
 }
-
-
-/////////////////////////////////////

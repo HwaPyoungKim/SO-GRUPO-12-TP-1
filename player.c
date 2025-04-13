@@ -17,69 +17,54 @@ void endRead(gameSyncSHMStruct *sync);
 void beginRead(gameSyncSHMStruct *sync);
 
 int main(int argc, char *argv[]){
-  //recibe como parametro el ancho y alto del tablero
 
-  if (argc != 3) {
-    fprintf(stderr, "Uso: %s <width> <height>\n", argv[0]);
-    return 1;
-  }
+    if (argc != 3) {
+        fprintf(stderr, "Uso: %s <width> <height>\n", argv[0]);
+        return 1;
+    }
 
-  int width = atoi(argv[1]);
-  int height = atoi(argv[2]);
-
-  //Se conecta con ambas memorias compartidas
-
+    int width = atoi(argv[1]);
+    int height = atoi(argv[2]);
   
-  size_t totalSize = sizeof(gameStateSHMStruct) + sizeof(int) * width * height;
+    size_t totalSize = sizeof(gameStateSHMStruct) + sizeof(int) * width * height;
 
-  int gameStateFD = shm_open(GAME_STATE_SHM_NAME, O_RDWR, 0666);
-  if (gameStateFD == -1) {
-    perror("shm_open xd");
-    exit(EXIT_FAILURE);
-  }
+    int gameStateFD = shm_open(GAME_STATE_SHM_NAME, O_RDWR, 0666);
+    if (gameStateFD == -1) {
+        perror("shm_open xd");
+        exit(EXIT_FAILURE);
+    }
 
-  int gameSyncFD = shm_open(GAME_SYNC_SHM_NAME, O_RDWR, 0666);
-  if (gameSyncFD == -1) {
-    perror("shm_open GAME_SYNC");
-    exit(EXIT_FAILURE);
-  }
+    int gameSyncFD = shm_open(GAME_SYNC_SHM_NAME, O_RDWR, 0666);
+    if (gameSyncFD == -1) {
+        perror("shm_open GAME_SYNC");
+        exit(EXIT_FAILURE);
+    }
 
+    gameStateSHMStruct *gameStateSHM = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, gameStateFD, 0);
+    if (gameStateSHM == MAP_FAILED) {
+        perror("mmap");
+        exit(EXIT_FAILURE);
+    }
 
-  gameStateSHMStruct *gameStateSHM = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, gameStateFD, 0);
-  if (gameStateSHM == MAP_FAILED) {
-    perror("mmap");
-    exit(EXIT_FAILURE);
-  }
-
-  gameSyncSHMStruct *gameSyncSHM = mmap(NULL, sizeof(gameSyncSHMStruct), PROT_READ | PROT_WRITE, MAP_SHARED, gameSyncFD, 0);
-  if (gameSyncSHM == MAP_FAILED) {
-    perror("mmap GAME_SYNC");
-    exit(EXIT_FAILURE);
-  }
-
-
-
-  //Mientras no esté bloqueado, consultar el estado del tablero de forma sincronizada entre el
-  //máster y el resto de jugadores y enviar solicitudes de movimientos al máster.
-
-  //Ejemplo
+    gameSyncSHMStruct *gameSyncSHM = mmap(NULL, sizeof(gameSyncSHMStruct), PROT_READ | PROT_WRITE,    MAP_SHARED, gameSyncFD, 0);
+    if (gameSyncSHM == MAP_FAILED) {
+        perror("mmap GAME_SYNC");
+        exit(EXIT_FAILURE);
+    }
 
     srand(time(NULL) ^ getpid());
 
-    // beginRead(gameSyncSHM);
-    // endRead(gameSyncSHM);
+    bool stillPlaying = true;
+    unsigned char move;
 
-    // Simulamos el envío de 20 movimientos
-    // for (int i = 0; i < 20; i++) {
-    //     unsigned char movimiento = rand() % 8; // [0-7], direcciones válidas
-    //     write(1, &movimiento, sizeof(movimiento)); // escribir al stdout → máster lo recibe por el pipe
-    //     usleep(3000);  // Espera 300 ms para no spamear
-    // }
-
-    while(1){
+    while(stillPlaying){
         beginRead(gameSyncSHM);
 
-        //consultar estado
+        if(!gameStateSHM->gameState){
+            stillPlaying = false;
+        } else {
+            move = checkBestMove(playerX, playerY, &table);
+        }
 
         endRead(gameSyncSHM);
 
@@ -87,20 +72,13 @@ int main(int argc, char *argv[]){
         write(1, &movimiento, sizeof(movimiento));
     }
 
-    // unsigned char movimiento = rand() % 8;
-    // write(1, &movimiento, sizeof(movimiento));
-
     close(gameStateFD);
     close(gameSyncFD);
 
+    printf("termine de jugar fuera del if\n");
 
     return 0;
 }
-
-
-
-///////////////////////////////////////////////////////////////////////////////////////////
-
 
 void beginRead(gameSyncSHMStruct *sync) {
     sem_wait(&sync->writerPrivilege);
@@ -118,6 +96,10 @@ void endRead(gameSyncSHMStruct *sync) {
     sync->playersReadingCount--;
     if (sync->playersReadingCount == 0) sem_post(&sync->masterPlayerMutex);
     sem_post(&sync->playersReadingCountMutex);
+}
+
+unsigned char checkBestMove(playerX, playerY, &table){
+    return 0;
 }
 
 
