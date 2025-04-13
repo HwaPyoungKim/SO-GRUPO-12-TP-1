@@ -1,18 +1,3 @@
-./a.out -p player1 player2
-clear
-./a.out -p player1 player2
-clear
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2
-clear
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2
-strace ./a.out -p player1 player2
-clear
-strace ./a.out -p player1 player2
-ps
 rm player1
 rm player2
 rm a.out
@@ -497,4 +482,19 @@ exit
 cd
 gcc -Wall master.c -o master -lm
 gcc -Wall master.c -o master -lm -utils.c
+exit
+cd
+gcc -Wall master.c -o master -lm
+gcc -Wall master.c -o master -lm -utils.c
+gcc -Wall master.c -o master -lm -utils.c
+gcc -Wall master.c -o master -lm utils.c
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+apt update
+ apt install libncurses5-dev libncursesw5-dev
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+./master -p player1 player2 -v vista 
+exit
+cd
+./master -p player1 player2 -v vista 
+ps
 exit
