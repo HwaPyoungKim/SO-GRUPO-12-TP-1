@@ -1,14 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <time.h>
-#include "sharedMemory.h"
-#include <sys/mman.h>
-#include <stdint.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "utils.h"
 
 #define GAME_STATE_SHM_NAME "/game_state"
 #define GAME_SYNC_SHM_NAME "/game_sync"
@@ -63,13 +53,9 @@ int main(int argc, char *argv[]){
         if(!gameStateSHM->gameState){
             stillPlaying = false;
         }
-        // } else {
-        //     //move = checkBestMove(playerX, playerY, &table);
-        // }
+        unsigned char movimiento = findBestMove();
 
         endRead(gameSyncSHM);
-
-        unsigned char movimiento = rand() % 8;
         write(1, &movimiento, sizeof(movimiento));
     }
 
@@ -77,7 +63,6 @@ int main(int argc, char *argv[]){
     close(gameSyncFD);
 
     printf("termine de jugar fuera del if\n");
-
     return 0;
 }
 
@@ -99,8 +84,5 @@ void endRead(gameSyncSHMStruct *sync) {
     sem_post(&sync->playersReadingCountMutex);
 }
 
-// unsigned char checkBestMove(playerX, playerY, &table){
-//     return 0;
-// }
 
 
