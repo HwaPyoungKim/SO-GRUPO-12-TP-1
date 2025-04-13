@@ -10,16 +10,31 @@
 #include <fcntl.h>
 #include <time.h>
 #include <math.h>
+#include <ncurses.h>
 
 #define GAME_STATE_SHM_NAME "/game_state"
 #define GAME_SYNC_SHM_NAME "/game_sync"
 
+// Define colors
+#define PLAYER_COLOR 1
+#define DEFAULT_COLOR 2
+
 void endRead(gameSyncSHMStruct * sync);
 void beginRead(gameSyncSHMStruct * sync);
 
+void drawBoard(gameStateSHMStruct *gameState);
 void printTablero(int * table, int width, int height);
 
 int main(int argc, char *argv[]){ 
+
+  // Set the TERM variable to a known terminal type (e.g., xterm)
+  setenv("TERM", "xterm", 1);  // Setting TERM to 'xterm'
+
+  // Start ncurses
+  initscr();
+  noecho();
+  curs_set(FALSE);
+
   //Sleep para que le de tiempo al master de crear la SHM
   sleep(1);
   if (argc < 3) {
@@ -63,7 +78,8 @@ int main(int argc, char *argv[]){
     if(!gameStateSHM->gameState){
       flag = false;
     } else {
-      printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
+      //printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
+      drawBoard(gameStateSHM);
     }
     sem_post(&gameSyncSHM->B); // tell master we’re done printing
   }
@@ -71,6 +87,8 @@ int main(int argc, char *argv[]){
 
   close(gameStateFD);
   close(gameSyncFD);
+
+  endwin();
   
   return 0;
 }
@@ -93,4 +111,47 @@ void printTablero(int * table, int width, int height) {
   }
 
   printf("\n");
+}
+
+void drawBoard(gameStateSHMStruct *gameState) {
+  clear(); // Clears the screen before redrawing the board
+
+  // Initialize color pairs (You can change the color codes as needed)
+  start_color();
+  init_pair(PLAYER_COLOR, COLOR_RED, COLOR_BLACK);  // Player positions in red
+  init_pair(DEFAULT_COLOR, COLOR_WHITE, COLOR_BLACK);  // Default cells in white
+
+  // Loop through each player to highlight their current position
+  for (int y = 0; y < gameState->tableHeight; y++) {
+    for (int x = 0; x < gameState->tableWidth; x++) {
+      int index = y * gameState->tableWidth + x;
+      int cellValue = gameState->tableStartPointer[index];
+
+      // Find if this cell is occupied by a player
+      bool isPlayerCell = false;
+      for (int i = 0; i < gameState->playerQty; i++) {
+        if (gameState->playerList[i].tableX == x && gameState->playerList[i].tableY == y) {
+          isPlayerCell = true;
+          break;  // Player found, no need to check further players
+        }
+      }
+      if (isPlayerCell) {
+        // If it's a player, highlight the position
+        attron(COLOR_PAIR(PLAYER_COLOR));
+        mvprintw(y, x * 4, " P ");  // Adjust column spacing for better alignment
+        attroff(COLOR_PAIR(PLAYER_COLOR));
+      } else {
+        // Else, print with default color
+        attron(COLOR_PAIR(DEFAULT_COLOR));
+        if (cellValue > 0) {
+          mvprintw(y, x * 4, " %d ", cellValue);  // Print regular cell values
+        } else {
+          mvprintw(y, x * 4, " . ");  // Print empty cell
+        }
+        attroff(COLOR_PAIR(DEFAULT_COLOR));
+      }
+    }
+  }
+
+  refresh(); // Update the screen
 }

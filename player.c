@@ -62,9 +62,10 @@ int main(int argc, char *argv[]){
 
         if(!gameStateSHM->gameState){
             stillPlaying = false;
-        } else {
-            move = checkBestMove(playerX, playerY, &table);
         }
+        // } else {
+        //     //move = checkBestMove(playerX, playerY, &table);
+        // }
 
         endRead(gameSyncSHM);
 
@@ -98,8 +99,8 @@ void endRead(gameSyncSHMStruct *sync) {
     sem_post(&sync->playersReadingCountMutex);
 }
 
-unsigned char checkBestMove(playerX, playerY, &table){
-    return 0;
-}
+// unsigned char checkBestMove(playerX, playerY, &table){
+//     return 0;
+// }
 
 
