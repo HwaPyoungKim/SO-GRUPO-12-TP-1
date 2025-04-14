@@ -86,6 +86,8 @@ int main(int argc, char *argv[]){
     sem_post(&gameSyncSHM->B); // tell master we’re done printing
   }
 
+  munmap(gameStateSHM, totalSize);
+  munmap(gameSyncSHM, sizeof(gameSyncSHMStruct));
 
   close(gameStateFD);
   close(gameSyncFD);

@@ -59,10 +59,12 @@ int main(int argc, char *argv[]){
         write(1, &movimiento, sizeof(movimiento));
     }
 
+    munmap(gameStateSHM, totalSize);
+    munmap(gameSyncSHM, sizeof(gameSyncSHMStruct));
+
     close(gameStateFD);
     close(gameSyncFD);
-
-    printf("termine de jugar fuera del if\n");
+    
     return 0;
 }
 
