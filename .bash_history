@@ -1,50 +1,3 @@
-rm player1
-rm player2
-rm a.out
-git add .
-man pipe
-man pipe
-man mmap
-man pipe
-man mmap
-man dup2
-man get_pid
-man getpid
-man execve
-cd
-ls
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-strace ./a.out -p player1 player2
-clear
-./a.out -p player1 player2
-./a.out -p player1 player2
-./a.out -p player1 player2 player3
-./a.out -p player1 player2 player3
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2 player3
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-clear
-clear
-clear
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-./a.out -p player1 player2 player3
-exit
-cd
-ls
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out
-gcc -Wall -Werror master.c && ./a.out -lm
-gcc -Wall -Werror master.c -o master -lm
-./master -p player1 player2 player3
-strace ./master -p player1 player2 player3
-gcc -Wall -Werror master.c -o master -lm
 ./master -p player1 player2 player3
 gcc -Wall -Werror master.c -o master -lm
 ./master -p player1 player2 player3
@@ -497,4 +450,51 @@ exit
 cd
 ./master -p player1 player2 -v vista 
 ps
+exit
+cd root
+ls
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall master.c -o master -lm 
+gcc -Wall master.c -o master -lm 
+gcc -Wall master.c -o master -lm 
+gcc -Wall master.c -o master -lm 
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall player.c -o player1 -lm 
+gcc -Wall player.c -o player2 -lm 
+gcc -Wall player.c -o player3 -lm 
+./master -p player1 player2 -v vista 
+exitprintf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[playerIndex].playerName, playerIndex, status, gameStateSHM->playerList[playerIndex].score,gameStateSHM->
+clear
+./master -p player1 player2 -v vista 
+gcc -Wall master.c -o master -lm 
+./master -p player1 player2 -v vista 
+clrat
+clear
+./master -p player1 player2 -v vista 
+ps
+ps
+./master -p player1 player2 -v vista 
+./master -p player1 player2 -v vista 
+gcc -Wall player.c -o player1 -lm 
+gcc -Wall player.c -o player2 -lm 
+gcc -Wall player.c -o player3 -lm 
+./chompchamps -p player1 player2
+./chompchamps -p player1 player2
+./chompchamps -p player1 player2
+./chompchamps -p player1 player2 -v vista
+./chompchamps -p player1 player2 
+gcc -Wall player.c -o player1 -lm 
+gcc -Wall player.c -o player2 -lm 
+gcc -Wall player.c -o player3 -lm 
+gcc -Wall master.c -o master -lm 
+gcc -Wall vista.c -o vista -lm -lncurses -lrt -pthread
+gcc -Wall master.c -o master -lm 
+./chompchamps -p player1 player2 
+./chompchamps -p player1 player2 
+./chompchamps -p player1 player2 
+./chompchamps -p player1 player2 
+./chompchamps -p player1 player2 
+ls
+gcc -Wall master.c -o master -lm 
+clear
 exit

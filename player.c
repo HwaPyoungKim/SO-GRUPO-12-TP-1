@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
   
     size_t totalSize = sizeof(gameStateSHMStruct) + sizeof(int) * width * height;
 
-    int gameStateFD = shm_open(GAME_STATE_SHM_NAME, O_RDWR, 0666);
+    int gameStateFD = shm_open(GAME_STATE_SHM_NAME, O_RDONLY, 0666);
     if (gameStateFD == -1) {
         perror("shm_open xd");
         exit(EXIT_FAILURE);
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    gameStateSHMStruct *gameStateSHM = mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, gameStateFD, 0);
+    gameStateSHMStruct *gameStateSHM = mmap(NULL, totalSize, PROT_READ, MAP_SHARED, gameStateFD, 0);
     if (gameStateSHM == MAP_FAILED) {
         perror("mmap");
         exit(EXIT_FAILURE);
