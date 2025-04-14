@@ -25,6 +25,7 @@ int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]);
 
 void beginWrite(gameSyncSHMStruct * gameSyncSHM);
 void endWrite(gameSyncSHMStruct * gameSyncSHM);
+void printPlayer(int playerIndex, int status,gameStateSHMStruct * gameStateSHM);
 
 int
 main(int argc, char * argv[]) {
@@ -100,7 +101,6 @@ main(int argc, char * argv[]) {
   for (int i = 0; i < config.playerCount; i++){
     printf("  %s\n", config.playerPaths[i]);
   }
-  
 
   //Crear las memorias compartidas
   gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct *) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
@@ -220,9 +220,6 @@ main(int argc, char * argv[]) {
     }
 
     if(ready == 0){
-      if(validMoveInterval > (config.timeout * 1000)){
-        gameStateSHM->gameState = false;
-      }
       continue;
     }
 
@@ -244,29 +241,46 @@ main(int argc, char * argv[]) {
           activePlayers--;
         } else {
           //Leyo el movimiento
-          beginWrite(gameSyncSHM);
-          bool stateMove = validAndApplyMove(mov, index, gameStateSHM);
-          if(!stateMove){
-            
-            if (gameStateSHM->playerList[index].isBlocked && pipePlayerToMaster[index][0] != -1) {
-              
-              close(pipePlayerToMaster[index][0]);
-              pipePlayerToMaster[index][0] = -1;
+
+          if(validMoveInterval >= (config.timeout * MILISECS_TO_SECS)){
+            beginWrite(gameSyncSHM);
+            for(int i = 0; i < gameStateSHM->playerQty; i++){
+              gameStateSHM->playerList[i].isBlocked = true;
+              close(pipePlayerToMaster[i][0]);
+              pipePlayerToMaster[i][0] = -1;
               activePlayers--;
             }
+            gameStateSHM->gameState = false;
+
+            endWrite(gameSyncSHM);
+
+            usleep(config.delay * MICROSECS_TO_MILISECS);
+
           } else {
-            validMoveInterval = 0;
-          }
-          
-          endWrite(gameSyncSHM);
-
-          usleep(config.delay * MICROSECS_TO_MILISECS);
-          validMoveInterval += (size_t)config.delay;
-
-          if(config.view_path != NULL){
-            sem_post(&gameSyncSHM->A);
-            sem_wait(&gameSyncSHM->B);   
-          }  
+            beginWrite(gameSyncSHM);
+            bool stateMove = validAndApplyMove(mov, index, gameStateSHM);
+            if(!stateMove){
+              
+              if (gameStateSHM->playerList[index].isBlocked && pipePlayerToMaster[index][0] != -1) {
+                
+                close(pipePlayerToMaster[index][0]);
+                pipePlayerToMaster[index][0] = -1;
+                activePlayers--;
+              }
+            } else {
+              validMoveInterval = 0;
+            }
+            
+            endWrite(gameSyncSHM);
+  
+            usleep(config.delay * MICROSECS_TO_MILISECS);
+            validMoveInterval += (size_t)config.delay;
+  
+            if(config.view_path != NULL){
+              sem_post(&gameSyncSHM->A);
+              sem_wait(&gameSyncSHM->B);   
+            } 
+          }    
         }
         selectedPlayer = (index + 1) % config.playerCount;
         break;
@@ -280,28 +294,39 @@ main(int argc, char * argv[]) {
     sem_wait(&gameSyncSHM->B);  
   }
 
+  int statusArray[MAX_PLAYERS] = {0};
+
   for (int i = 0; i < config.playerCount; i++) {
     int status;
     waitpid(playerPids[i], &status, 0);
-    printPlayer(i, status, gameStateSHM);
+    statusArray[i] = status; 
   }
 
+  int viewStatus;
   if(config.view_path != NULL){
-     int status;
-    waitpid(viewPID, &status, 0);
+    waitpid(viewPID, &viewStatus, 0);
   }
+
+  for (int i = 0; i < config.playerCount; i++) {
+    printPlayer(i, WEXITSTATUS(statusArray[i]), gameStateSHM);
+  }
+
+  printf("View %s exited (%d)\n", config.view_path, viewStatus);
 
   if(deleteGameStateSHM(GAME_STATE_SHM_NAME,gameStateSHM) == ERROR_VALUE){
     exit(EXIT_FAILURE);
   }
 
+
   if(deleteGameSyncSHM(GAME_SYNC_SHM_NAME, gameSyncSHM) == ERROR_VALUE){
     exit(EXIT_FAILURE);
   }
+
   
   if(clearPipes(config.playerCount, pipePlayerToMaster) == ERROR_VALUE){
     exit(EXIT_FAILURE);
   }
+
 }
 
 void * createGameStateSHM(char * name, config_t * config) {
@@ -412,8 +437,6 @@ void * createGameSyncSHM(char * name) {
         return NULL;
     }
 
-    //guardar las cosas
-
     return gameSync;
 }
 
@@ -480,3 +503,5 @@ void beginWrite(gameSyncSHMStruct * gameSyncSHM) {
 void endWrite(gameSyncSHMStruct * gameSyncSHM) {
   sem_post(&gameSyncSHM->masterPlayerMutex);  // Libera acceso privilegiado
 }
+
+

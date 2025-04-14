@@ -184,6 +184,14 @@ static bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, un
   int posY = gameStateSHM->playerList[indexPlayer].tableY;
   int posX = gameStateSHM->playerList[indexPlayer].tableX;
 
+  int newX = posX;
+  int newY = posY;
+
+  movCases(mov, &newX, &newY);
+
+  if (newX < 0 || newX >= gameStateSHM->tableWidth || newY < 0 || newY >= gameStateSHM->tableHeight)
+    return false;
+
   movCases(mov, &posX, &posY);
 
   //checkea si el casillero ya esta ocupado
@@ -254,13 +262,6 @@ static bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStat
   return checkPosAvailability(0, LIMITMOVEINTERIOR, gameStateSHM, indexPlayer);
 }
 
-// validMovements = {7 = arriba izquierda, 0 = arriba, 1 = arriba derecha}
-//                   6 = izquierda,                  , 2 = derecha       }
-//                   5 = abajo izquierda,  4 = abajo , 3 = abajo derecha } 
-
-
-// Coordenadas de dirección (arriba, arriba-der, derecha, etc.)
-//crea jugador
 void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int columns, int cellWidth, int cellHeight, char * playerName){
   playerSHMStruct * player = &gameStateSHM->playerList[playerIndex];
     strncpy(player->playerName, playerName, sizeof(player->playerName) - 1);
@@ -307,14 +308,11 @@ bool validAndApplyMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * 
       if (!hasMoves) {
           gameStateSHM->playerList[indexPlayer].isBlocked = true;
       }
-  
       gameStateSHM->playerList[indexPlayer].invalidMoveQty++;
       return false;
-  
     }
   
     gameStateSHM->playerList[indexPlayer].validMoveQty++;
-    
     return true;
 }
 
@@ -333,4 +331,5 @@ void printPlayer(int playerIndex, int status,gameStateSHMStruct * gameStateSHM){
   printf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[playerIndex].playerName, playerIndex, status, gameStateSHM->playerList[playerIndex].score,gameStateSHM->playerList[playerIndex].validMoveQty, gameStateSHM->playerList[playerIndex].invalidMoveQty);
   return;
 }
+
 
