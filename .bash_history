@@ -498,3 +498,18 @@ ps
 kill 1153
 ps
 exit
+cd
+ps
+gcc -Wall player.c -o player1 -lm utils.c
+gcc -Wall player.c -o player1 -lm utils.c
+gcc -Wall player.c -o player2 -lm utils.c
+gcc -Wall player.c -o player3 -lm utils.c
+gcc -Wall master.c -o master -lm utils.c
+./master -p player1 player2 player3 -v vista 
+gcc -Wall player.c -o player1 -lm utils.cclear
+clear
+gcc -Wall player.c -o player1 -lm utils.c
+gcc -Wall player.c -o player2 -lm utils.c
+gcc -Wall player.c -o player3 -lm utils.c
+gcc -Wall master.c -o master -lm utils.c
+./master -p player1 player2 player3 -v vista 
