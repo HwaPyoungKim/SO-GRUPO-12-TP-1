@@ -37,7 +37,7 @@ main(int argc, char * argv[]) {
   config.delay = DEFAULT_DELAY;
   config.timeout = DEFAULT_TIMEOUT;
   config.seed = time(NULL);
-  config.view_path = NULL;
+  config.view_path[0] = '\0';
   config.playerCount = 0;
 
   int opt;
@@ -78,7 +78,7 @@ main(int argc, char * argv[]) {
                     exit(EXIT_FAILURE);
                   }
                     strncpy(config.playerPaths[config.playerCount], argv[i], MAX_LENGTH - 1);
-                    config.playerPaths[config.playerCount][MAX_LENGTH - 1] = '\0';
+                    config.playerPaths[config.playerCount++][MAX_LENGTH - 1] = '\0';
                     optind++;
                 }
                 break;
@@ -98,7 +98,7 @@ main(int argc, char * argv[]) {
   printf("delay: %d\n", config.delay);
   printf("timeout: %d\n", config.timeout);
   printf("seed: %d\n", config.seed);
-  printf("view: %s\n", config.view_path == NULL ? "-" : config.view_path);
+  printf("view: %s\n", config.view_path[0] == '\0' ? "-" : config.view_path);
   printf("num_players: %d\n", config.playerCount);
   for (int i = 0; i < config.playerCount; i++){
     printf("  %s\n", config.playerPaths[i]);
@@ -117,7 +117,7 @@ main(int argc, char * argv[]) {
 
   pid_t viewPID;
 
-  if(config.view_path != NULL){
+  if(strlen(config.view_path) > 0){
     pid_t pid = fork();
     if (pid == ERROR_VALUE) {
       perror("fork");
@@ -274,7 +274,7 @@ main(int argc, char * argv[]) {
             usleep(config.delay * MICROSECS_TO_MILISECS);
             validMoveInterval += (size_t)config.delay;
   
-            if(config.view_path != NULL){
+            if(strlen(config.view_path) > 0){
               sem_post(&gameSyncSHM->semPendingView);
               sem_wait(&gameSyncSHM->semFinishedView);   
             } 
@@ -287,7 +287,7 @@ main(int argc, char * argv[]) {
   }
 
   gameStateSHM->gameState = false;
-  if(config.view_path != NULL){
+  if(strlen(config.view_path) > 0){
     sem_post(&gameSyncSHM->semPendingView);
     sem_wait(&gameSyncSHM->semFinishedView);  
   }
@@ -301,7 +301,7 @@ main(int argc, char * argv[]) {
   }
 
   int viewStatus;
-  if(config.view_path != NULL){
+  if(strlen(config.view_path) > 0){
     waitpid(viewPID, &viewStatus, 0);
   }
 
