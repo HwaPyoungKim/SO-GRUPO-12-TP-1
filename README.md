@@ -1,9 +1,9 @@
 # SO-GRUPO-12-TP-1
 
 ## Autores
-Tomas Kaneko
-Hwa Pyoung Kim
-Roman Berruti
+* Tomas Kaneko
+* Hwa Pyoung Kim
+* Roman Berruti
 
 ## Aplicación
 Nuestro proyecto consiste de los siguientes archivos:
