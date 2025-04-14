@@ -80,9 +80,9 @@ int main(int argc, char *argv[]){
       flag = false;
       cleanUp(offscreen);
     } else {
-      //printTablero(gameStateSHM->tableStartPointer, gameStateSHM->tableWidth, gameStateSHM->tableHeight);
       drawBoard(gameStateSHM, offscreen);
     }
+    
     sem_post(&gameSyncSHM->B); // tell master we’re done printing
   }
 
@@ -91,31 +91,9 @@ int main(int argc, char *argv[]){
   close(gameSyncFD);
 
   cleanUp(offscreen);
-
-  //endwin();
   
   return 0;
 }
-
-// void printTablero(int * table, int width, int height) {
-//   printf("\nEstado del tablero:\n\n");
-
-//   for (int y = 0; y < height; y++) {
-//       for (int x = 0; x < width; x++) {
-//           int index = y * width + x;
-//           int cell = table[index];
-
-//           if (cell > 0) {
-//               printf(" %d  ", cell); // recompensa (1-9)
-//           } else {
-//               printf(" P%d ", -cell); // jugador (almacenado como -1, -2, etc.)
-//           }
-//       }
-//       printf("\n\n");
-//   }
-
-//   printf("\n");
-// }
 
 void cleanUp(WINDOW * offscreen){
   delwin(offscreen);
@@ -178,14 +156,10 @@ void drawBoard(gameStateSHMStruct *gameState, WINDOW * offscreen) {
 
   for (int i = 0; i < gameState->playerQty; i++) {
       wattron(offscreen, COLOR_PAIR(i + 1));
-      // mvwprintw(offscreen, baseY + i + 1, 0,
-      //          "Jugador %d (%s): %d pts | Movs válidos: %d | Inválidos: %d",
-      //          i + 1, gameState->playerList[i].playerName, gameState->playerList[i].score,
-      //          gameState->playerList[i].validMoveQty, gameState->playerList[i].invalidMoveQty);
       mvwprintw(offscreen, baseY + i + 1, 0, "Jugador %d(%s): %d pts | movs validos: %d | movs invalidos: %d", i+1, gameState->playerList[i].playerName, gameState->playerList[i].score, gameState->playerList[i].validMoveQty, gameState->playerList[i].invalidMoveQty);
       wattroff(offscreen, COLOR_PAIR(i + 1));
   }
   wnoutrefresh(offscreen);
   doupdate();
-  //refresh(); 
+  
 }

@@ -3,11 +3,25 @@
 
 #include "sharedMemory.h" 
 
+#define MAX_PLAYERS 9
+#define ERROR_VALUE -1
+
+typedef struct {
+    int width;
+    int height;
+    int delay;
+    int timeout;
+    int seed;
+    char * view_path; // puede ser NULL
+    char * playerPaths[MAX_PLAYERS];
+    int playerCount;
+} config_t;
+
 //crea jugador
-void createPlayer();
+void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int columns, int cellWidth, int cellHeight, char * playerName);
 
 // Verifica si un movimiento es válido (Usa master) (Usar funciones static)
-bool validAndApplyMove(unsigned mov, int index, gameStateSHMStruct * gameStateSHM);
+bool validAndApplyMove(unsigned char mov, int index, gameStateSHMStruct * gameStateSHM);
 
 // Encuentra mejor movimiento del player (Usa player) (Usar funciones static)
 unsigned char findBestMove(); 
