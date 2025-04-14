@@ -153,9 +153,6 @@ main(int argc, char * argv[]) {
   int cellHeight = height / rows;
 
   for (int i = 0; i < config.playerCount; i++) {
-
-    createPlayer(gameStateSHM, i, columns, cellWidth, cellHeight, config.playerPaths[i]);
-
     if (pipe(pipePlayerToMaster[i]) == ERROR_VALUE) {
       perror("Error in pipe player to master");
       exit(EXIT_FAILURE);
@@ -184,6 +181,7 @@ main(int argc, char * argv[]) {
       exit(EXIT_FAILURE);
     } else {
       playerPids[i] = pid;
+      createPlayer(gameStateSHM, i, columns, cellWidth, cellHeight, config.playerPaths[i], pid);
     }
   
   }

@@ -51,12 +51,19 @@ static bool checkIfOccupied(int posTable, gameStateSHMStruct * gameStateSHM){
   return gameStateSHM->tableStartPointer[posTable] < 1;  
 }
 
+static bool isMoveLegal(int x, int y, gameStateSHMStruct *gameState) {
+  if (x < 0 || y < 0 || x >= gameState->tableWidth || y >= gameState->tableHeight)
+      return false;
+  
+  int idx = y * gameState->tableWidth + x;
+  return !checkIfOccupied(idx, gameState); 
+}
+
 static bool checkPosAvailability(int iniMov, int limit, gameStateSHMStruct * gameStateSHM, int indexPlayer){
 
   int posY, posX;  
   int cantInvalid = 0;
   int movIniValid = iniMov;
-  int playerPosInTable;
 
   while(cantInvalid < limit){
     posY = gameStateSHM->playerList[indexPlayer].tableY;
@@ -64,16 +71,11 @@ static bool checkPosAvailability(int iniMov, int limit, gameStateSHMStruct * gam
 
     movCases((movIniValid++) % 8, &posX, &posY);
 
-    if (posX >= 0 && posX < gameStateSHM->tableWidth && posY >= 0 && posY < gameStateSHM->tableHeight){
-      playerPosInTable = (posY * gameStateSHM->tableWidth) + posX;
-     if(!checkIfOccupied(playerPosInTable, gameStateSHM)){
-       return true;
-     }
+    if (isMoveLegal(posX, posY, gameStateSHM)) {
+      return true;
+    }
     cantInvalid++;
-    }       
-    
-  }
-
+  }       
   return false;  
 }
 
@@ -84,102 +86,14 @@ static bool isBorder(int indexPlayer, gameStateSHMStruct * gameStateSHM){
 
 
 static bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned char mov){
-  // Check if the player is on the border
-  if (isBorder(indexPlayer, gameStateSHM)) {
-        
-    // Player is in the upper-left corner
-    if (gameStateSHM->playerList[indexPlayer].tableX == 0 && gameStateSHM->playerList[indexPlayer].tableY == 0) {
-        switch (mov) {
-            case 0:
-            case 1:
-            case 5:
-            case 6:
-            case 7:
-                return false;
-        }
-    }
-    
-    // Player is in the upper-right corner
-    else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1 && gameStateSHM->playerList[indexPlayer].tableY == 0) {
-        switch (mov) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 7:
-                return false;
-        }
-    }
-    
-    // Player is in the lower-left corner
-    else if (gameStateSHM->playerList[indexPlayer].tableX == 0 && gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
-    
-        switch (mov) {
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-                return false;
-        }
-    }
-    
-    // Player is in the lower-right corner
-    else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1 && gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
-        
-        switch (mov) {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-                return false;
-        }
-    }
-    
-    // Player is on the border but not in any corner (left column, right column, top row, bottom row)
-    else {
-        // For example, if the player is on the left column (excluding corners)
-        if (gameStateSHM->playerList[indexPlayer].tableX == 0) {
-            switch (mov) {
-                case 6:
-                case 5:
-                case 7:
-                    return false; // Invalid movement
-            }
-        }
 
-        // If the player is on the right column (excluding corners)
-        else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1) {
-            switch (mov) {
-                case 2: 
-                case 1:
-                case 3:
-                    return false; // Invalid movement
-            }
-        }
+  int x = gameStateSHM->playerList[indexPlayer].tableX;
+  int y = gameStateSHM->playerList[indexPlayer].tableY;
+  movCases(mov, &x, &y);
 
-        // If the player is in the first row (excluding corners)
-        else if (gameStateSHM->playerList[indexPlayer].tableY == 0) {
-            switch (mov) {
-                case 7:
-                case 0:
-                case 1:
-                    return false; // Invalid movement
-            }
-        }
-
-        // If the player is in the last row (excluding corners)
-        else if (gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
-            switch (mov) {
-                case 3:
-                case 4: 
-                case 5:
-                    return false; // Invalid movement
-            }
-        }
-      }
-    }
+  if (!isMoveLegal(x, y, gameStateSHM)){
+    return false;
+  }
 
   int posY = gameStateSHM->playerList[indexPlayer].tableY;
   int posX = gameStateSHM->playerList[indexPlayer].tableX;
@@ -262,7 +176,7 @@ static bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStat
   return checkPosAvailability(0, LIMITMOVEINTERIOR, gameStateSHM, indexPlayer);
 }
 
-void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int columns, int cellWidth, int cellHeight, char * playerName){
+void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int columns, int cellWidth, int cellHeight, char * playerName, pid_t pid){
   playerSHMStruct * player = &gameStateSHM->playerList[playerIndex];
     strncpy(player->playerName, playerName, sizeof(player->playerName) - 1);
     player->playerName[sizeof(player->playerName) - 1] = '\0';
@@ -288,6 +202,7 @@ void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int column
     player->tableX = x;
     player->tableY = y; 
     player->isBlocked = false;
+    player->playerPID = pid;
 
     gameStateSHM->tableStartPointer[y * width + x] = (playerIndex + 1) * (-1); 
   return;
@@ -317,8 +232,32 @@ bool validAndApplyMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * 
 }
 
 // Encuentra mejor movimiento del player (Usa player) (Usar funciones static)
-unsigned char findBestMove(){
-  return 0;
+unsigned char findBestMove(int indexPlayer, gameStateSHMStruct *gameState) {
+  int currentX = gameState->playerList[indexPlayer].tableX;
+  int currentY = gameState->playerList[indexPlayer].tableY;
+
+  int maxScore = -1;
+  unsigned char bestMove = 8; // inválido por default
+
+  for (unsigned char mov = 0; mov < 8; mov++) {
+      int newX = currentX;
+      int newY = currentY;
+
+      movCases(mov, &newX, &newY);
+
+      if (!isMoveLegal(newX, newY, gameState))
+          continue;
+
+      int idx = newY * gameState->tableWidth + newX;
+      int score = gameState->tableStartPointer[idx];
+
+      if (score > maxScore) {
+          maxScore = score;
+          bestMove = mov;
+      }
+  }
+
+  return bestMove;
 }
 
 //Verifica si el jugador esta bloqueado
