@@ -62,11 +62,12 @@ main(int argc, char * argv[]) {
                 config.seed = atoi(optarg);
                 break;
             case 'v':
-                config.view_path = strdup(optarg);
+                strncpy(config.view_path, optarg, MAX_LENGTH - 1);
+                config.view_path[MAX_LENGTH - 1] = '\0';
                 break;
             case 'p':
-                // Los jugadores vienen después de -p
-                config.playerPaths[0] = strdup(optarg);
+                strncpy(config.playerPaths[0], optarg, MAX_LENGTH - 1);
+                config.playerPaths[0][MAX_LENGTH - 1] = '\0';
                 config.playerCount = 1;
                 for (int i = optind; i < argc ; i++) {
                   if (argv[i][0] == '-') {
@@ -76,7 +77,8 @@ main(int argc, char * argv[]) {
                     fprintf(stderr, "Como mucho debe especificar 9 jugadores usando -p\n");
                     exit(EXIT_FAILURE);
                   }
-                    config.playerPaths[config.playerCount++] = strdup(argv[i]);
+                    strncpy(config.playerPaths[config.playerCount], argv[i], MAX_LENGTH - 1);
+                    config.playerPaths[config.playerCount][MAX_LENGTH - 1] = '\0';
                     optind++;
                 }
                 break;
@@ -102,16 +104,15 @@ main(int argc, char * argv[]) {
     printf("  %s\n", config.playerPaths[i]);
   }
 
-  //Crear las memorias compartidas
   gameStateSHMStruct * gameStateSHM = (gameStateSHMStruct *) createGameStateSHM(GAME_STATE_SHM_NAME, &config);
 
-  //Crear los semaforos
   gameSyncSHMStruct * gameSyncSHM = (gameSyncSHMStruct *) createGameSyncSHM(GAME_SYNC_SHM_NAME);
 
-  //Crear los valores del tablero:
+  srand(config.seed);
+
   int * tablero = gameStateSHM->tableStartPointer;
     for (int i = 0; i < config.width * config.height; i++) {
-      tablero[i] = (rand() % 9) + 1; // recompensa entre 1 y 9
+      tablero[i] = (rand() % 9) + 1;
   }
 
   pid_t viewPID;
@@ -165,8 +166,8 @@ main(int argc, char * argv[]) {
     }
     
     if(pid == 0){
-      close(pipePlayerToMaster[i][0]); // Cierra lectura
-      dup2(pipePlayerToMaster[i][1], STDOUT_FILENO); // Redirige stdout al pipe
+      close(pipePlayerToMaster[i][0]); 
+      dup2(pipePlayerToMaster[i][1], STDOUT_FILENO); 
 
       char width_str[10], height_str[10];
       snprintf(width_str, sizeof(width_str), "%d", config.width);
@@ -238,7 +239,6 @@ main(int argc, char * argv[]) {
           pipePlayerToMaster[index][0] = -1;
           activePlayers--;
         } else {
-          //Leyo el movimiento
 
           if(validMoveInterval >= (config.timeout * MILISECS_TO_SECS)){
             beginWrite(gameSyncSHM);
@@ -275,8 +275,8 @@ main(int argc, char * argv[]) {
             validMoveInterval += (size_t)config.delay;
   
             if(config.view_path != NULL){
-              sem_post(&gameSyncSHM->A);
-              sem_wait(&gameSyncSHM->B);   
+              sem_post(&gameSyncSHM->semPendingView);
+              sem_wait(&gameSyncSHM->semFinishedView);   
             } 
           }    
         }
@@ -288,8 +288,8 @@ main(int argc, char * argv[]) {
 
   gameStateSHM->gameState = false;
   if(config.view_path != NULL){
-    sem_post(&gameSyncSHM->A);
-    sem_wait(&gameSyncSHM->B);  
+    sem_post(&gameSyncSHM->semPendingView);
+    sem_wait(&gameSyncSHM->semFinishedView);  
   }
 
   int statusArray[MAX_PLAYERS] = {0};
@@ -384,7 +384,7 @@ void * createGameSyncSHM(char * name) {
     shm_unlink(name);
        
     int fd;
-    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0644); // ver este permiso
+    fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0666); 
     
     if(fd == ERROR_VALUE) {
         perror("Fallo al crear la memoria compartida del game sync\n");
@@ -403,12 +403,12 @@ void * createGameSyncSHM(char * name) {
         return NULL;
     }
 
-    if(sem_init(&(gameSync->A), 1, 0) == ERROR_VALUE) {
+    if(sem_init(&(gameSync->semPendingView), 1, 0) == ERROR_VALUE) {
         perror("Fallo crear el semaforo A\n");
         return NULL;
     }
 
-    if(sem_init(&(gameSync->B), 1, 0) == ERROR_VALUE) {
+    if(sem_init(&(gameSync->semFinishedView), 1, 0) == ERROR_VALUE) {
       perror("Fallo crear el semaforo B\n");
       return NULL;
     }
@@ -440,12 +440,12 @@ void * createGameSyncSHM(char * name) {
 
 int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
 
-    if(sem_destroy(&(gameSync->A)) == ERROR_VALUE) {
+    if(sem_destroy(&(gameSync->semPendingView)) == ERROR_VALUE) {
       perror("Fallo cerrar el semaforo A");
       return ERROR_VALUE;
     }
 
-    if(sem_destroy(&(gameSync->B)) == ERROR_VALUE) {
+    if(sem_destroy(&(gameSync->semFinishedView)) == ERROR_VALUE) {
       perror("Fallo cerrar el semaforo B");
       return ERROR_VALUE;
     }
@@ -479,7 +479,6 @@ int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
 
 int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]){
   for (int i = 0; i < playerCount; i++){
-    //Limpio segundo pipe de player a master
       if(close(pipePlayerToMaster[i][READ]) == ERROR_VALUE){
       perror("Fallo limpiar el pipe de player a master");
       return ERROR_VALUE;
@@ -488,18 +487,14 @@ int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]){
   return 0;
 }
 
-// validMovements = {7 = arriba izquierda, 0 = arriba, 1 = arriba derecha}
-//                   6 = izquierda,                  , 2 = derecha       }
-//                   5 = abajo izquierda,  4 = abajo , 3 = abajo derecha } 
-
 void beginWrite(gameSyncSHMStruct * gameSyncSHM) {
-  sem_wait(&gameSyncSHM->writerPrivilege);    // Impide que se agreguen lectores
-  sem_wait(&gameSyncSHM->masterPlayerMutex);  //Acceso a que corra el master
-  sem_post(&gameSyncSHM->writerPrivilege);    //Libera escritura
+  sem_wait(&gameSyncSHM->writerPrivilege);    
+  sem_wait(&gameSyncSHM->masterPlayerMutex);  
+  sem_post(&gameSyncSHM->writerPrivilege);    
 }
 
 void endWrite(gameSyncSHMStruct * gameSyncSHM) {
-  sem_post(&gameSyncSHM->masterPlayerMutex);  // Libera acceso privilegiado
+  sem_post(&gameSyncSHM->masterPlayerMutex);  
 }
 
 

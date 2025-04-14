@@ -5,6 +5,7 @@
 
 #define MAX_PLAYERS 9
 #define ERROR_VALUE -1
+#define MAX_LENGTH 20
 
 typedef struct {
     int width;
@@ -12,8 +13,8 @@ typedef struct {
     int delay;
     int timeout;
     int seed;
-    char * view_path; // puede ser NULL
-    char * playerPaths[MAX_PLAYERS];
+    char view_path[MAX_LENGTH]; // puede ser NULL
+    char playerPaths[MAX_PLAYERS][MAX_LENGTH];
     int playerCount;
 } config_t;
 

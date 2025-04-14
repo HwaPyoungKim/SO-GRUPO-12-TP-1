@@ -34,7 +34,6 @@ int main(int argc, char *argv[]){
   noecho();
   curs_set(FALSE);
 
-  //Sleep para que le de tiempo al master de crear la SHM
   sleep(1);
   if (argc < 3) {
     fprintf(stderr, "Uso: %s <width> <height>\n", argv[0]);
@@ -74,7 +73,7 @@ int main(int argc, char *argv[]){
 
   bool flag = true;
   while(flag){
-    sem_wait(&gameSyncSHM->A); // wait for master to signal
+    sem_wait(&gameSyncSHM->semPendingView); 
 
     if(!gameStateSHM->gameState){
       flag = false;
@@ -83,16 +82,15 @@ int main(int argc, char *argv[]){
       drawBoard(gameStateSHM, offscreen);
     }
     
-    sem_post(&gameSyncSHM->B); // tell master we’re done printing
+    sem_post(&gameSyncSHM->semFinishedView); 
   }
-
   munmap(gameStateSHM, totalSize);
   munmap(gameSyncSHM, sizeof(gameSyncSHMStruct));
 
   close(gameStateFD);
   close(gameSyncFD);
 
-  cleanUp(offscreen);
+  cleanUp(offscreen); 
   
   return 0;
 }

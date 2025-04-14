@@ -5,7 +5,6 @@
 
 static void endRead(gameSyncSHMStruct *sync);
 static void beginRead(gameSyncSHMStruct *sync);
-static int findMyIndex(gameStateSHMStruct *gameState);
 
 int main(int argc, char *argv[]){
 
