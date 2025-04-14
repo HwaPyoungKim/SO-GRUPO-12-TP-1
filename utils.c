@@ -231,40 +231,6 @@ bool validAndApplyMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * 
     return true;
 }
 
-// Encuentra mejor movimiento del player (Usa player) (Usar funciones static)
-unsigned char findBestMove(int indexPlayer, gameStateSHMStruct *gameState) {
-  int currentX = gameState->playerList[indexPlayer].tableX;
-  int currentY = gameState->playerList[indexPlayer].tableY;
-
-  int maxScore = -1;
-  unsigned char bestMove = 8; // inválido por default
-
-  for (unsigned char mov = 0; mov < 8; mov++) {
-      int newX = currentX;
-      int newY = currentY;
-
-      movCases(mov, &newX, &newY);
-
-      if (!isMoveLegal(newX, newY, gameState))
-          continue;
-
-      int idx = newY * gameState->tableWidth + newX;
-      int score = gameState->tableStartPointer[idx];
-
-      if (score > maxScore) {
-          maxScore = score;
-          bestMove = mov;
-      }
-  }
-
-  return bestMove;
-}
-
-//Verifica si el jugador esta bloqueado
-bool playerIsBlocked(){
-  return false;
-}
-
 // Verifica si un jugador está bloqueado
 void printPlayer(int playerIndex, int status,gameStateSHMStruct * gameStateSHM){
   printf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[playerIndex].playerName, playerIndex, status, gameStateSHM->playerList[playerIndex].score,gameStateSHM->playerList[playerIndex].validMoveQty, gameStateSHM->playerList[playerIndex].invalidMoveQty);
