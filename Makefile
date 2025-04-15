@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -fsanitize=address
 VIEWFLAGS = -lpthread -lrt -lncurses
 MASTERPLAYERFLAGS = -lm
 
@@ -48,3 +48,7 @@ vista: vista.o
 
 clean:
 	rm -f *.o $(TARGETS)
+
+
+cleanTest:
+	rm -rf report.tasks PVS-Studio.log strace_out cppoutput.txt *.valgrind

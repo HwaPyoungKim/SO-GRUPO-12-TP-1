@@ -13,18 +13,19 @@ typedef struct {
     int delay;
     int timeout;
     int seed;
-    char view_path[MAX_LENGTH]; // puede ser NULL
+    char view_path[MAX_LENGTH];
     char playerPaths[MAX_PLAYERS][MAX_LENGTH];
     int playerCount;
 } config_t;
 
-//crea jugador
 void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int columns, int cellWidth, int cellHeight, char * playerName, pid_t pid);
 
-// Verifica si un movimiento es válido (Usa master) (Usar funciones static)
 bool validAndApplyMove(unsigned char mov, int index, gameStateSHMStruct * gameStateSHM);
 
-// Verifica si un jugador está bloqueado
+int findWinner(gameStateSHMStruct * gameStateSHM);
+
 void printPlayer(int playerIndex, int status,gameStateSHMStruct * gameStateSHM);
+
+void printWinner(int playerIndex, gameStateSHMStruct * gameStateSHM);
 
 #endif

@@ -87,28 +87,13 @@ static bool isBorder(int indexPlayer, gameStateSHMStruct * gameStateSHM){
 
 static bool checkMovement(int indexPlayer, gameStateSHMStruct * gameStateSHM, unsigned char mov){
 
-  int x = gameStateSHM->playerList[indexPlayer].tableX;
-  int y = gameStateSHM->playerList[indexPlayer].tableY;
-  movCases(mov, &x, &y);
-
-  if (!isMoveLegal(x, y, gameStateSHM)){
-    return false;
-  }
-
   int posY = gameStateSHM->playerList[indexPlayer].tableY;
   int posX = gameStateSHM->playerList[indexPlayer].tableX;
-
-  int newX = posX;
-  int newY = posY;
-
-  movCases(mov, &newX, &newY);
-
-  if (newX < 0 || newX >= gameStateSHM->tableWidth || newY < 0 || newY >= gameStateSHM->tableHeight)
-    return false;
-
   movCases(mov, &posX, &posY);
 
-  //checkea si el casillero ya esta ocupado
+  if (!isMoveLegal(posX, posY, gameStateSHM)){
+    return false;
+  }
 
   int playerPosInTable = (posY * gameStateSHM->tableWidth) + posX; 
 
@@ -128,50 +113,44 @@ static bool checkMoveAvailability(int indexPlayer, gameStateSHMStruct * gameStat
 
   if(isBorder(indexPlayer, gameStateSHM)){
 
-    // Player is in the upper-left corner
+    // Check corners
     if (gameStateSHM->playerList[indexPlayer].tableX == 0 && gameStateSHM->playerList[indexPlayer].tableY == 0) {
       return checkPosAvailability(2, LIMITMOVECORNER, gameStateSHM, indexPlayer);       
     }
 
-      // Player is in the upper-right corner
     else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1 && gameStateSHM->playerList[indexPlayer].tableY == 0) {
       return checkPosAvailability(4, LIMITMOVECORNER, gameStateSHM, indexPlayer);  
     }
   
-    // Player is in the lower-left corner
     else if (gameStateSHM->playerList[indexPlayer].tableX == 0 && gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
        return checkPosAvailability(0, LIMITMOVECORNER, gameStateSHM, indexPlayer);
     }
   
-    // Player is in the lower-right corner
     else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1 && gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
       return checkPosAvailability(6, LIMITMOVECORNER, gameStateSHM, indexPlayer);   
     }
   }
   
   else {
-      // For example, if the player is on the left column (excluding corners)
+      // Check borders
       if (gameStateSHM->playerList[indexPlayer].tableX == 0) {
         return checkPosAvailability(0, LIMITMOVEBORDER, gameStateSHM, indexPlayer);
       }
 
-      // If the player is on the right column (excluding corners)
       else if (gameStateSHM->playerList[indexPlayer].tableX == gameStateSHM->tableWidth - 1) {
         return checkPosAvailability(4, LIMITMOVEBORDER, gameStateSHM, indexPlayer);
       }
 
-      // If the player is in the first row (excluding corners)
       else if (gameStateSHM->playerList[indexPlayer].tableY == 0) {
         return checkPosAvailability(2, LIMITMOVEBORDER, gameStateSHM, indexPlayer);
       }
 
-      // If the player is in the last row (excluding corners)
       else if (gameStateSHM->playerList[indexPlayer].tableY == gameStateSHM->tableHeight - 1) {
         return checkPosAvailability(6, LIMITMOVEBORDER, gameStateSHM, indexPlayer);
       }
   }
 
-  //player is on the interior
+  // Player is not in corners and borders
 
   return checkPosAvailability(0, LIMITMOVEINTERIOR, gameStateSHM, indexPlayer);
 }
@@ -184,11 +163,11 @@ void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int column
     int row = playerIndex / columns;
     int col = playerIndex % columns;
 
-    int x_ini = col * cellWidth;
-    int y_ini = row * cellHeight;
+    int xIni = col * cellWidth;
+    int yIni = row * cellHeight;
 
-    int x = x_ini + cellWidth / 2;
-    int y = y_ini + cellHeight / 2;
+    int x = xIni + cellWidth / 2;
+    int y = yIni + cellHeight / 2;
 
     unsigned short width = gameStateSHM->tableWidth;
     unsigned short height = gameStateSHM->tableHeight; 
@@ -208,11 +187,11 @@ void createPlayer(gameStateSHMStruct * gameStateSHM, int playerIndex, int column
   return;
 }
 
-// Verifica si un movimiento es válido (Usa master) (Usar funciones static)
+// Verify valid move
 bool validAndApplyMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * gameStateSHM){
-    //Si es borde, retornar -1 (se quiere mover para afuera)
+    //If is border, return -1 (player wants to move outside the table)
     if(indexPlayer < 0 || indexPlayer >= 9){
-      perror("Indice invalido para acceder a jugador");
+      perror("Indice invalido para acceder a jugador\n");
       return ERROR_VALUE;
     }
   
@@ -231,10 +210,36 @@ bool validAndApplyMove(unsigned char mov, int indexPlayer, gameStateSHMStruct * 
     return true;
 }
 
-// Verifica si un jugador está bloqueado
+int findWinner(gameStateSHMStruct * gameStateSHM){
+  int limit = gameStateSHM->playerQty;
+  int winnerIndex = -1;
+  int scoreAux = 0;
+  int validMoveAux = 0;
+  int invalidMoveAux = 0;
+  int currentScore, currentValidMove, currentInvalidMove;
+
+  for(int i = 0; i < limit; i++){
+    currentScore = gameStateSHM->playerList[i].score;
+    currentValidMove = gameStateSHM->playerList[i].validMoveQty;
+    currentInvalidMove = gameStateSHM->playerList[i].invalidMoveQty;
+
+    if(currentScore > scoreAux || (currentScore == scoreAux && currentValidMove < validMoveAux) || (currentScore == scoreAux && currentValidMove == validMoveAux && currentInvalidMove < invalidMoveAux)){
+      winnerIndex = i;
+      scoreAux = currentScore;
+      validMoveAux = currentValidMove;
+      invalidMoveAux = currentInvalidMove;
+    }    
+  }
+  return winnerIndex;
+}
+
 void printPlayer(int playerIndex, int status,gameStateSHMStruct * gameStateSHM){
   printf("Player %s (%d) exited (%d) with score of %d / %d / %d\n", gameStateSHM->playerList[playerIndex].playerName, playerIndex, status, gameStateSHM->playerList[playerIndex].score,gameStateSHM->playerList[playerIndex].validMoveQty, gameStateSHM->playerList[playerIndex].invalidMoveQty);
   return;
+}
+
+void printWinner(int playerIndex, gameStateSHMStruct * gameStateSHM){
+  printf("\n######### Winner is %s #########\n\n", gameStateSHM->playerList[playerIndex].playerName);
 }
 
 

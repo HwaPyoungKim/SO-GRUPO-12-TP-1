@@ -46,7 +46,7 @@ main(int argc, char * argv[]) {
         switch (opt) {
             case 'w':
                 config.width = atoi(optarg);
-                if (config.width < 10) config.width = 10; // ver si chequear que no nos pasen algo menor a 10
+                if (config.width < 10) config.width = 10;
                 break;
             case 'h':
                 config.height = atoi(optarg);
@@ -110,9 +110,9 @@ main(int argc, char * argv[]) {
 
   srand(config.seed);
 
-  int * tablero = gameStateSHM->tableStartPointer;
+  int * table = gameStateSHM->tableStartPointer;
     for (int i = 0; i < config.width * config.height; i++) {
-      tablero[i] = (rand() % 9) + 1;
+      table[i] = (rand() % 9) + 1;
   }
 
   pid_t viewPID;
@@ -155,7 +155,7 @@ main(int argc, char * argv[]) {
 
   for (int i = 0; i < config.playerCount; i++) {
     if (pipe(pipePlayerToMaster[i]) == ERROR_VALUE) {
-      perror("Error in pipe player to master");
+      perror("pipe");
       exit(EXIT_FAILURE);
     }
 
@@ -176,7 +176,6 @@ main(int argc, char * argv[]) {
       char *arguments[] = { config.playerPaths[i], width_str, height_str, NULL };
 
       execve(config.playerPaths[i], arguments, NULL);
-
       perror("execve");
       gameStateSHM->playerList[i].isBlocked = true;
       exit(EXIT_FAILURE);
@@ -234,7 +233,7 @@ main(int argc, char * argv[]) {
         unsigned char mov;
         int n = read(pipeFD, &mov, 1);
         if(n < 0){
-          perror("fallo en read");
+          perror("read");
         } else if(n == 0){
           pipePlayerToMaster[index][0] = -1;
           activePlayers--;
@@ -305,6 +304,12 @@ main(int argc, char * argv[]) {
     waitpid(viewPID, &viewStatus, 0);
   }
 
+  int winnerIndex = 0;
+  winnerIndex = findWinner(gameStateSHM);
+  if(winnerIndex != -1){
+    printWinner(winnerIndex, gameStateSHM);
+  }
+
   for (int i = 0; i < config.playerCount; i++) {
     printPlayer(i, WEXITSTATUS(statusArray[i]), gameStateSHM);
   }
@@ -334,26 +339,26 @@ void * createGameStateSHM(char * name, config_t * config) {
     fd = shm_open(name, O_CREAT | O_RDWR, 0666);
     
     if(fd == ERROR_VALUE) {
-        perror("Fallo al crear la memoria compartida del game state\n");
+        perror("shm_open");
         return NULL;
     }
 
     size_t totalSize = sizeof(gameStateSHMStruct) + sizeof(int) * config->width * config->height;
     
     if(ftruncate(fd, totalSize) == ERROR_VALUE) {
-        perror("No hay espacio para la memoria compartida del game state\n");
+        perror("fturncate");
         return NULL;
     }
 
     gameStateSHMStruct * gameState = (gameStateSHMStruct *) mmap(NULL, totalSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
     if(gameState == MAP_FAILED) {
-        perror("Fallo mapear la memoria compartida del game state\n");
+        perror("mmap");
         return NULL;
     }
 
     if(close(fd) == ERROR_VALUE) {
-      perror("Fallo cerrar la memoria compartida del game state\n");
+      perror("close fd");
       return NULL;
     }
 
@@ -369,12 +374,12 @@ int deleteGameStateSHM(char * name, gameStateSHMStruct * gameState) {
 
     size_t totalSize = sizeof(gameState) + sizeof(int) * gameState->tableWidth * gameState->tableHeight;
     if(munmap(gameState, sizeof(totalSize)) == ERROR_VALUE) { 
-      perror("Fallo desmapear la memoria compartida del game state\n");
+      perror("munmap");
       return ERROR_VALUE;
     }
 
     if(shm_unlink(name) == ERROR_VALUE){
-      perror("Fallo deslinkear la memoria compartida del game state\n");
+      perror("shm_unlink");
       return ERROR_VALUE;
     }
     return 0;
@@ -387,51 +392,51 @@ void * createGameSyncSHM(char * name) {
     fd = shm_open(name, O_CREAT | O_RDWR | O_TRUNC, 0666); 
     
     if(fd == ERROR_VALUE) {
-        perror("Fallo al crear la memoria compartida del game sync\n");
+        perror("shm_open");
         return NULL;
     }
     
     if(ftruncate(fd, sizeof(gameSyncSHMStruct)) == ERROR_VALUE) {
-        perror("No hay espacio para la memoria compartida del game Sync\n");
+        perror("ftruncate");
         return NULL;
     }
 
     gameSyncSHMStruct * gameSync = mmap(NULL, sizeof(gameSyncSHMStruct), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
     if(gameSync == MAP_FAILED) {
-        perror("Fallo mapear la memoria compartida del game sync\n");
+        perror("mmap");
         return NULL;
     }
 
     if(sem_init(&(gameSync->semPendingView), 1, 0) == ERROR_VALUE) {
-        perror("Fallo crear el semaforo A\n");
+        perror("sem_init");
         return NULL;
     }
 
     if(sem_init(&(gameSync->semFinishedView), 1, 0) == ERROR_VALUE) {
-      perror("Fallo crear el semaforo B\n");
+      perror("sem_init");
       return NULL;
     }
 
     if(sem_init(&(gameSync->writerPrivilege), 1, 1) == ERROR_VALUE) {
-      perror("Fallo crear el semaforo writerPrivilege\n");
+      perror("sem_init");
       return NULL;
     }
 
     if(sem_init(&(gameSync->masterPlayerMutex), 1, 1) == ERROR_VALUE) {
-      perror("Fallo crear el semaforo D\n");
+      perror("sem_init");
       return NULL;
     }
 
     if(sem_init(&(gameSync->playersReadingCountMutex), 1, 1) == ERROR_VALUE) {
-      perror("Fallo crear el semaforo playersReadingCountMutex\n");
+      perror("sem_init");
       return NULL;  
     }
 
     gameSync->playersReadingCount = 0;
 
     if(close(fd) == ERROR_VALUE) {
-        perror("Fallo cerrar la memoria compartida del game sync\n");
+        perror("close fd");
         return NULL;
     }
 
@@ -441,37 +446,37 @@ void * createGameSyncSHM(char * name) {
 int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
 
     if(sem_destroy(&(gameSync->semPendingView)) == ERROR_VALUE) {
-      perror("Fallo cerrar el semaforo A");
+      perror("sem_destroy");
       return ERROR_VALUE;
     }
 
     if(sem_destroy(&(gameSync->semFinishedView)) == ERROR_VALUE) {
-      perror("Fallo cerrar el semaforo B");
+      perror("sem_destroy");
       return ERROR_VALUE;
     }
 
     if(sem_destroy(&(gameSync->writerPrivilege)) == ERROR_VALUE) {
-      perror("Fallo cerrar el semaforo writerPrivilege");
+      perror("sem_destroy");
       return ERROR_VALUE;
     }
 
     if(sem_destroy(&(gameSync->masterPlayerMutex)) == ERROR_VALUE) {
-      perror("Fallo cerrar el semaforo D");
+      perror("sem_destroy");
       return ERROR_VALUE;
     }
 
     if(sem_destroy(&(gameSync->playersReadingCountMutex)) == ERROR_VALUE) {
-      perror("Fallo cerrar el semaforo playersReadingCountMutex");
+      perror("sem_destroy");
       return ERROR_VALUE;
     }
 
     if(munmap(gameSync, sizeof(gameSyncSHMStruct)) == ERROR_VALUE) {
-        perror("Fallo desmapear la memoria compartida del game sync\n");
+        perror("sem_destroy");
         return ERROR_VALUE;
     }
 
     if(shm_unlink(name) == ERROR_VALUE){
-        perror("Fallo deslinkear la memoria compartida del game sync");
+        perror("sem_destroy");
         return ERROR_VALUE;
     }
     return 0;
@@ -480,7 +485,7 @@ int deleteGameSyncSHM(char * name, gameSyncSHMStruct * gameSync) {
 int clearPipes(int playerCount, int (*pipePlayerToMaster)[2]){
   for (int i = 0; i < playerCount; i++){
       if(close(pipePlayerToMaster[i][READ]) == ERROR_VALUE){
-      perror("Fallo limpiar el pipe de player a master");
+      perror("close pipe");
       return ERROR_VALUE;
     }
   }
