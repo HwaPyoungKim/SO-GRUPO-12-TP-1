@@ -107,11 +107,17 @@ void drawBoard(gameStateSHMStruct *gameState, WINDOW * offscreen) {
   werase(offscreen);
   start_color();
 
-  for(int i = 0; i < 9; i++) {
-      init_pair(i + 1, i + 1, COLOR_BLACK);
-  }
-  init_pair(10, COLOR_WHITE, COLOR_BLACK);
-  init_pair(11, COLOR_WHITE, COLOR_BLACK); 
+  init_pair(1, COLOR_RED, COLOR_BLACK);
+  init_pair(2, COLOR_GREEN, COLOR_BLACK);
+  init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(4, COLOR_BLUE, COLOR_BLACK);
+  init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(6, COLOR_CYAN, COLOR_BLACK);
+  init_pair(7, COLOR_BLACK, COLOR_GREEN); 
+  init_pair(8, COLOR_BLACK, COLOR_YELLOW);
+  init_pair(9, COLOR_BLACK, COLOR_CYAN);
+  init_pair(10, COLOR_WHITE, COLOR_BLACK); 
+
 
   int width = gameState->tableWidth;
   int height = gameState->tableHeight;
