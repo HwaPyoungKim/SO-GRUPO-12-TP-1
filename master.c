@@ -167,7 +167,13 @@ main(int argc, char * argv[]) {
     
     if(pid == 0){
       close(pipePlayerToMaster[i][0]); 
-      dup2(pipePlayerToMaster[i][1], STDOUT_FILENO); 
+      dup2(pipePlayerToMaster[i][1], STDOUT_FILENO);
+
+      close(pipePlayerToMaster[i][1]); 
+      for(int j = 0; j<i; j++){
+        close(pipePlayerToMaster[j][0]);
+        close(pipePlayerToMaster[j][1]); 
+      }
 
       char width_str[10], height_str[10];
       snprintf(width_str, sizeof(width_str), "%d", config.width);
